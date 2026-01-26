@@ -50,7 +50,7 @@
                     </td>
                     <td>${{ order_item.paidPrice|floatformat:2 }}</td>
                     <td>{{ order_item.quantity }}</td>
-                    <td>${{ order_item.paidPrice|mul:order_item.quantity|floatformat:2 }}</td>
+                    <td>${{ order_item.subtotal|floatformat:2 }}</td>
                     <td>
                         {% with latest_status=order_item.statuses.last %}
                             <span style="background-color: {% if latest_status.status == 'Completed' %}var(--success-color){% elif latest_status.status == 'Cancelled' %}var(--error-color){% elif latest_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem;">

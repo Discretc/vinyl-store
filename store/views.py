@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Sum
 from django.views.decorators.http import require_POST, require_GET
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
@@ -314,11 +314,18 @@ def view_cart(request):
             product = item.productID
             # Check for active promotion
             price = product.price
+            has_promo = False
             for promo in product.promotions.filter(status='active'):
                 if promo.is_active():
                     discount = promo.get_discount_amount(price)
                     price -= discount
+                    has_promo = True
                     break
+            
+            # Add computed subtotal properties
+            item.subtotal = product.price * item.quantity
+            item.subtotal_with_promo = price * item.quantity
+            
             total_price += price * item.quantity
 
         context = {
@@ -475,6 +482,10 @@ def order_detail(request, order_id):
         customer = Customer.objects.get(customerID=request.session['customer_id'])
         order = get_object_or_404(Order, orderID=order_id, customerID=customer)
         order_items = order.items.all().prefetch_related('statuses')
+        
+        # Add subtotal to each order item
+        for item in order_items:
+            item.subtotal = item.paidPrice * item.quantity
 
         context = {
             'order': order,
@@ -610,9 +621,12 @@ def vendor_dashboard(request):
         vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
         store = vendor.store
         products = store.products.all()
-        total_sales = Order.objects.filter(items__productID__storeID=store).aggregate(
-            total=Decimal('0.00')
-        )['total'] or Decimal('0.00')
+        
+        # Calculate total sales from orders
+        total_sales_result = OrderItem.objects.filter(
+            productID__storeID=store
+        ).aggregate(total=Sum('paidPrice'))
+        total_sales = total_sales_result['total'] or Decimal('0.00')
 
         context = {
             'vendor': vendor,

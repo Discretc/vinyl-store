@@ -36,7 +36,7 @@
                                                 <button type="submit" class="btn btn-small" style="padding: 0.25rem 0.5rem;">Update</button>
                                             </form>
                                         </td>
-                                        <td>${{ final_price|mul:item.quantity|floatformat:2 }}</td>
+                                        <td>${{ item.subtotal_with_promo|floatformat:2 }}</td>
                                         <td>
                                             <form method="post" action="{% url 'remove_from_cart' item.pk %}" style="display: inline;">
                                                 {% csrf_token %}
@@ -59,7 +59,7 @@
                                             <button type="submit" class="btn btn-small" style="padding: 0.25rem 0.5rem;">Update</button>
                                         </form>
                                     </td>
-                                    <td>${{ product.price|mul:item.quantity|floatformat:2 }}</td>
+                                    <td>${{ item.subtotal|floatformat:2 }}</td>
                                     <td>
                                         <form method="post" action="{% url 'remove_from_cart' item.pk %}" style="display: inline;">
                                             {% csrf_token %}
