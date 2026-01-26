@@ -1,0 +1,45 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Order History - Vinyl Store{% endblock %}
+
+{% block content %}
+<h2 class="page-title">My Orders</h2>
+
+{% if orders %}
+    <div class="container">
+        {% for order in orders %}
+            <div style="padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <strong>Order #{{ order.orderID }}</strong>
+                        <p style="color: #666; font-size: 0.9rem;">{{ order.orderDate|date:"M d, Y H:i" }}</p>
+                    </div>
+                    <div>
+                        <strong>Total:</strong>
+                        <p style="color: var(--secondary-color); font-weight: bold; font-size: 1.1rem;">${{ order.totalAmount|floatformat:2 }}</p>
+                    </div>
+                    <div>
+                        <strong>Items:</strong>
+                        <p style="color: #666;">{{ order.items.count }} item{{ order.items.count|pluralize }}</p>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Status: 
+                        {% with latest=order.items.first.statuses.last %}
+                            <strong>{{ latest.status }}</strong>
+                        {% endwith %}
+                    </p>
+                    <a href="{% url 'order_detail' order.orderID %}" class="btn btn-primary btn-small">View Details</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <div class="empty-state-message">You haven't placed any orders yet</div>
+        <p>Start shopping and place your first order!</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+    </div>
+{% endif %}
+{% endblock %}

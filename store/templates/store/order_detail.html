@@ -1,0 +1,86 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Order #{{ order.orderID }} - Vinyl Store{% endblock %}
+
+{% block content %}
+<a href="{% url 'order_history' %}" style="color: var(--accent-color);">← Back to Orders</a>
+
+<div class="container">
+    <h2 class="page-title">Order #{{ order.orderID }}</h2>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <!-- Order Info -->
+        <div>
+            <h3>Order Information</h3>
+            <p><strong>Order ID:</strong> #{{ order.orderID }}</p>
+            <p><strong>Date:</strong> {{ order.orderDate|date:"M d, Y H:i" }}</p>
+            <p><strong>Status:</strong> 
+                {% with first_status=order.items.first.statuses.first %}
+                    <span style="background-color: {% if first_status.status == 'Completed' %}var(--success-color){% elif first_status.status == 'Cancelled' %}var(--error-color){% elif first_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px;">{{ first_status.status }}</span>
+                {% endwith %}
+            </p>
+        </div>
+
+        <!-- Shipping Info -->
+        <div>
+            <h3>Shipping Address</h3>
+            <p>{{ order.shippingAddress|linebreaks }}</p>
+        </div>
+    </div>
+
+    <!-- Order Items -->
+    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Order Items</h3>
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order_item in order_items %}
+                <tr>
+                    <td>
+                        <a href="{% url 'product_detail' order_item.productID.productID %}">
+                            {{ order_item.productID.productName }}
+                        </a>
+                    </td>
+                    <td>${{ order_item.paidPrice|floatformat:2 }}</td>
+                    <td>{{ order_item.quantity }}</td>
+                    <td>${{ order_item.paidPrice|mul:order_item.quantity|floatformat:2 }}</td>
+                    <td>
+                        {% with latest_status=order_item.statuses.last %}
+                            <span style="background-color: {% if latest_status.status == 'Completed' %}var(--success-color){% elif latest_status.status == 'Cancelled' %}var(--error-color){% elif latest_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem;">
+                                {{ latest_status.status }}
+                            </span>
+                        {% endwith %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Order Total -->
+    <div class="cart-summary" style="margin-top: 2rem; max-width: 400px; margin-left: auto;">
+        <div class="cart-summary-row">
+            <span>Subtotal:</span>
+            <span>${{ order.totalAmount|floatformat:2 }}</span>
+        </div>
+        <div class="cart-summary-row">
+            <span>Shipping:</span>
+            <span>FREE</span>
+        </div>
+        <div class="cart-summary-total">
+            Total: ${{ order.totalAmount|floatformat:2 }}
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{% url 'order_history' %}" class="btn btn-primary">View All Orders</a>
+        <a href="{% url 'product_list' %}" class="btn btn-secondary">Continue Shopping</a>
+    </div>
+</div>
+{% endblock %}

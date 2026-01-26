@@ -1,0 +1,186 @@
+{% extends 'store/base.html' %}
+
+{% block title %}{{ product.productName }} - Vinyl Store{% endblock %}
+
+{% block content %}
+<a href="{% url 'product_list' %}" style="color: var(--accent-color);">← Back to Products</a>
+
+<div class="product-detail-container">
+    <!-- Product Images -->
+    <div class="product-detail-image">
+        {% if primary_image %}
+            <img src="{{ primary_image.mediaURL.url }}" alt="{{ product.productName }}" style="max-width: 100%; border-radius: 10px;">
+        {% else %}
+            <div style="width: 100%; height: 400px; background-color: var(--light-color); display: flex; align-items: center; justify-content: center; color: #999; border-radius: 10px;">No image available</div>
+        {% endif %}
+        
+        {% if media.count > 1 %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; margin-top: 1rem;">
+                {% for m in media %}
+                    <img src="{{ m.mediaURL.url }}" alt="Image {{ forloop.counter }}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 5px; cursor: pointer;" onclick="document.querySelector('.product-detail-image img').src='{{ m.mediaURL.url }}'">
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Product Info -->
+    <div class="product-detail-info">
+        <h1>{{ product.productName }}</h1>
+        <p style="color: #666; font-size: 1.1rem; margin-bottom: 1rem;">By: {{ product.storeID.storeName }}</p>
+
+        <!-- Price Section -->
+        {% with active_promo=active_promo %}
+            {% if active_promo %}
+                <p class="product-price discounted">${{ product.price|floatformat:2 }}</p>
+                <p class="product-detail-price">
+                    ${{ product.price|add:active_promo.get_discount_amount|floatformat:2 }}
+                    <span class="product-discount">-{{ active_promo.discountRate }}% OFF</span>
+                </p>
+            {% else %}
+                <p class="product-detail-price">${{ product.price|floatformat:2 }}</p>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Rating -->
+        {% if reviews.count > 0 %}
+            <div class="product-detail-rating">
+                ⭐ {{ avg_rating|default:"N/A" }} out of 5 stars ({{ reviews.count }} reviews)
+            </div>
+        {% else %}
+            <div class="product-detail-rating">
+                No reviews yet
+            </div>
+        {% endif %}
+
+        <!-- Stock Status -->
+        <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+            {% if product.stockQuantity > 0 %}
+                <span style="color: var(--success-color); font-weight: bold;">✓ In Stock ({{ product.stockQuantity }} available)</span>
+            {% else %}
+                <span style="color: var(--error-color); font-weight: bold;">✗ Out of Stock</span>
+            {% endif %}
+        </p>
+
+        <!-- Description -->
+        <div style="background-color: var(--light-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+            <h3>Description</h3>
+            <p>{{ product.description }}</p>
+        </div>
+
+        <!-- Add to Cart Form -->
+        {% if product.stockQuantity > 0 %}
+            <form method="post" action="{% url 'add_to_cart' product.productID %}" style="display: flex; gap: 1rem; align-items: flex-end;">
+                {% csrf_token %}
+                <div style="flex: 1;">
+                    <label for="quantity">Quantity:</label>
+                    <div class="quantity-selector">
+                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product.stockQuantity }}">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="flex: 2;">Add to Cart</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleWishlist()">❤️ {% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</button>
+            </form>
+        {% else %}
+            <button class="btn btn-secondary" disabled>Out of Stock</button>
+        {% endif %}
+
+        <!-- Store Info -->
+        <div style="background-color: var(--light-color); padding: 1.5rem; border-radius: 10px; margin-top: 2rem;">
+            <h3>Seller Information</h3>
+            <p><strong>{{ product.storeID.storeName }}</strong></p>
+            {% if product.storeID.description %}
+                <p>{{ product.storeID.description }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Reviews Section -->
+<section class="reviews-section container">
+    <h2>Reviews ({{ reviews.count }})</h2>
+
+    {% if request.session.user_type == 'customer' %}
+        <div class="review-form">
+            <h3>Write a Review</h3>
+            <form id="review-form" method="post" action="{% url 'add_review' product.productID %}" style="display: flex; flex-direction: column; gap: 1rem;">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="rating">Rating:</label>
+                    <select id="rating" name="rating" required>
+                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                        <option value="4">⭐⭐⭐⭐ Good</option>
+                        <option value="3">⭐⭐⭐ Average</option>
+                        <option value="2">⭐⭐ Poor</option>
+                        <option value="1">⭐ Terrible</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="comment">Comment:</label>
+                    <textarea id="comment" name="comment" placeholder="Share your thoughts..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Post Review</button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if reviews %}
+        {% for review in reviews %}
+            <div class="review-item">
+                <div class="review-header">
+                    <div>
+                        <div class="review-author">{{ review.customerID.firstName }} {{ review.customerID.lastName }}</div>
+                        <div class="review-rating">{{ review.rating }} star{{ review.rating|pluralize }}</div>
+                    </div>
+                    <div class="review-date">{{ review.createdDate|date:"M d, Y" }}</div>
+                </div>
+                {% if review.comment %}
+                    <div class="review-comment">{{ review.comment }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="text-align: center; color: #999;">No reviews yet. Be the first to review this product!</p>
+    {% endif %}
+</section>
+
+<script>
+function toggleWishlist() {
+    fetch('{% url "toggle_wishlist" product.productID %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Error occurred');
+        }
+    });
+}
+
+document.getElementById('review-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('{% url "add_review" product.productID %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Review posted successfully!');
+            location.reload();
+        } else {
+            alert(data.error || 'Error posting review');
+        }
+    });
+});
+</script>
+{% endblock %}

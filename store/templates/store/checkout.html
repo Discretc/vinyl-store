@@ -1,0 +1,68 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Checkout - Vinyl Store{% endblock %}
+
+{% block content %}
+<h2 class="page-title">Checkout</h2>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+    <!-- Order Form -->
+    <div class="container">
+        <h3>Shipping Information</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Name:</label>
+                <input type="text" value="{{ customer.firstName }} {{ customer.lastName }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" value="{{ customer.email }}" disabled>
+            </div>
+            <div class="form-group">
+                <label for="shipping_address">Shipping Address: <span style="color: red;">*</span></label>
+                <textarea id="shipping_address" name="shipping_address" required placeholder="Enter your full shipping address">{{ customer.shippingAddress }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Place Order</button>
+        </form>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="container">
+        <h3>Order Summary</h3>
+        
+        <div style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+            {% for item_data in cart_items %}
+                {% with item=item_data.cart_item product=item_data.cart_item.productID %}
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <p style="font-weight: bold;">{{ product.productName }}</p>
+                        <p style="font-size: 0.9rem; color: #666;">Qty: {{ item.quantity }}</p>
+                        <p style="font-size: 0.9rem;">Price: ${{ item_data.final_price|floatformat:2 }} each</p>
+                        <p style="font-weight: bold; color: var(--accent-color);">Subtotal: ${{ item_data.subtotal|floatformat:2 }}</p>
+                    </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+
+        <div class="cart-summary" style="margin: 0;">
+            <div class="cart-summary-row" style="margin-bottom: 1rem;">
+                <span>Subtotal:</span>
+                <span>${{ total_amount|floatformat:2 }}</span>
+            </div>
+            <div class="cart-summary-row" style="margin-bottom: 1rem;">
+                <span>Shipping:</span>
+                <span>FREE</span>
+            </div>
+            <div class="cart-summary-total" style="border-top: 2px solid white;">
+                Total: ${{ total_amount|floatformat:2 }}
+            </div>
+        </div>
+
+        <p style="text-align: center; color: #666; font-size: 0.85rem; margin-top: 1rem;">
+            ✓ Secure checkout<br>
+            ✓ Free shipping<br>
+            Your order will be processed immediately
+        </p>
+    </div>
+</div>
+{% endblock %}

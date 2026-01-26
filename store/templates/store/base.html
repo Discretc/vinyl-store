@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Vinyl Store{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="nav-logo">🎵 Vinyl Store</a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'product_list' %}" class="nav-link">Browse</a></li>
+                {% if request.session.user_type == 'customer' %}
+                    <li><a href="{% url 'view_cart' %}" class="nav-link">Cart</a></li>
+                    <li><a href="{% url 'view_wishlist' %}" class="nav-link">Wishlist</a></li>
+                    <li><a href="{% url 'order_history' %}" class="nav-link">Orders</a></li>
+                    <li><a href="{% url 'logout' %}" class="nav-link logout-link">Logout ({{ request.session.customer_name }})</a></li>
+                {% elif request.session.user_type == 'vendor' %}
+                    <li><a href="{% url 'vendor_dashboard' %}" class="nav-link">Dashboard</a></li>
+                    <li><a href="{% url 'logout' %}" class="nav-link logout-link">Logout ({{ request.session.vendor_name }})</a></li>
+                {% else %}
+                    <li><a href="{% url 'customer_register' %}" class="nav-link">Customer Sign Up</a></li>
+                    <li><a href="{% url 'customer_login' %}" class="nav-link">Customer Login</a></li>
+                    <li><a href="{% url 'vendor_register' %}" class="nav-link">Vendor Sign Up</a></li>
+                    <li><a href="{% url 'vendor_login' %}" class="nav-link">Vendor Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                    <button class="close-alert">&times;</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 Vinyl Store. A university capstone project.</p>
+            <p>Built with Django and PostgreSQL</p>
+        </div>
+    </footer>
+
+    <script>
+        // Close alert messages
+        document.querySelectorAll('.close-alert').forEach(button => {
+            button.addEventListener('click', function() {
+                this.parentElement.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

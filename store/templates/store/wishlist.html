@@ -1,0 +1,66 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Wishlist - Vinyl Store{% endblock %}
+
+{% block content %}
+<h2 class="page-title">My Wishlist</h2>
+
+{% if wishlist_items %}
+    <div class="product-grid">
+        {% for item in wishlist_items %}
+            {% with product=item.productID %}
+                <div class="product-card">
+                    {% if product.media.all %}
+                        {% with primary=product.media.filter|dictsort:"isPrimary" %}
+                            {% if primary %}
+                                <img src="{{ primary.0.mediaURL.url }}" alt="{{ product.productName }}" class="product-image">
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <div style="width: 100%; height: 250px; background-color: var(--light-color); display: flex; align-items: center; justify-content: center; color: #999;">No image</div>
+                    {% endif %}
+                    <div class="product-info">
+                        <h3 class="product-name">{{ product.productName }}</h3>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">{{ product.storeID.storeName }}</p>
+                        
+                        {% if item.discountRate > 0 %}
+                            <p class="product-price discounted">${{ item.originalPrice|floatformat:2 }}</p>
+                            <p class="product-price">${{ item.priceAtAddedTime|floatformat:2 }}
+                                <span class="product-discount">-{{ item.discountRate }}%</span>
+                            </p>
+                        {% else %}
+                            <p class="product-price">${{ item.originalPrice|floatformat:2 }}</p>
+                        {% endif %}
+
+                        <p class="product-stock {% if product.stockQuantity == 0 %}out{% elif product.stockQuantity < 5 %}low{% endif %}">
+                            {% if product.stockQuantity > 0 %}
+                                {{ product.stockQuantity }} in stock
+                            {% else %}
+                                Out of stock
+                            {% endif %}
+                        </p>
+                        <p style="font-size: 0.85rem; color: #999;">Added: {{ item.addedDate|date:"M d, Y" }}</p>
+                        <div class="product-actions">
+                            <a href="{% url 'product_detail' product.productID %}" class="btn btn-primary btn-small">View Details</a>
+                            {% if product.stockQuantity > 0 %}
+                                <form method="post" action="{% url 'add_to_cart' product.productID %}" style="width: 100%;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-success btn-small" style="width: 100%;">Add to Cart</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">❤️</div>
+        <div class="empty-state-message">Your wishlist is empty</div>
+        <p>Add vinyl records to your wishlist to save them for later!</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+    </div>
+{% endif %}
+{% endblock %}
