@@ -10,29 +10,27 @@
 }
 
 :root {
-    --primary-color: #1a1a1a;
-    --secondary-color: #ff6b35;
-    --accent-color: #00d4ff;
+    --primary-color: #ffffff;
+    --secondary-color: #f5f5f5;
+    --accent-color: #0a0a0a;
     --light-color: #f0f0f0;
-    --dark-color: #0d0d0d;
+    --dark-color: #333333;
     --success-color: #4ade80;
     --warning-color: #fbbf24;
     --error-color: #f87171;
-    --text-color: #e0e0e0;
-    --border-color: #333;
+    --text-color: #333333;
+    --border-color: #e0e0e0;
     --vinyl-green: #00d084;
     --vinyl-pink: #ff1493;
-    --card-bg: #2a2a2a;
+    --card-bg: #ffffff;
 }
 
 body {
     font-family: 'Assistant', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: var(--text-color);
-    background-color: #0d0d0d;
-    background-image: 
-        radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.05) 0%, transparent 50%);
+    background-color: #ffffff;
+    background-image: none;
 }
 
 a {
@@ -63,12 +61,13 @@ button:hover {
 /* ======================= NAVIGATION ======================= */
 
 .navbar {
-    background-color: var(--primary-color);
+    background-color: #ffffff;
     padding: 1rem 0;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     position: sticky;
     top: 0;
     z-index: 1000;
+    border-bottom: 1px solid #e8e8e8;
 }
 
 .nav-container {
@@ -83,13 +82,13 @@ button:hover {
 .nav-logo {
     font-size: 1.8rem;
     font-weight: bold;
-    color: white;
+    color: #0a0a0a;
     transition: transform 0.3s ease;
 }
 
 .nav-logo:hover {
     transform: scale(1.05);
-    color: var(--secondary-color);
+    color: #666666;
 }
 
 .nav-menu {
@@ -100,13 +99,16 @@ button:hover {
 }
 
 .nav-link {
-    color: white;
+    color: #333333;
     padding: 0.5rem 1rem;
     transition: background-color 0.3s ease;
     border-radius: 5px;
 }
 
 .nav-link:hover {
+    background-color: #f0f0f0;
+    color: #0a0a0a;
+}
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--secondary-color);
 }
@@ -197,9 +199,10 @@ button:hover {
 .page-title {
     font-size: 2.5rem;
     margin-bottom: 2rem;
-    color: var(--primary-color);
-    border-bottom: 3px solid var(--secondary-color);
+    color: #0a0a0a;
+    border-bottom: 2px solid #e0e0e0;
     padding-bottom: 1rem;
+    font-weight: 700;
 }
 
 /* ======================= FORMS ======================= */
@@ -218,7 +221,7 @@ form {
 
 label {
     font-weight: 600;
-    color: var(--light-color);
+    color: #0a0a0a;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-size: 0.9rem;
@@ -232,14 +235,14 @@ input[type="date"],
 textarea,
 select {
     padding: 0.9rem 1.2rem;
-    border: 2px solid var(--border-color);
+    border: 1px solid #e0e0e0;
     border-radius: 6px;
     font-size: 1rem;
     font-family: inherit;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background-color: #1a1a1a;
-    color: var(--light-color);
-    caret-color: var(--secondary-color);
+    background-color: #ffffff;
+    color: #333333;
+    caret-color: #0a0a0a;
 }
 
 input[type="text"]::placeholder,
@@ -247,16 +250,16 @@ input[type="email"]::placeholder,
 input[type="password"]::placeholder,
 input[type="number"]::placeholder,
 textarea::placeholder {
-    color: #666;
+    color: #999999;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: var(--secondary-color);
-    box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1), inset 0 0 10px rgba(255, 107, 53, 0.05);
-    background-color: #222;
+    border-color: #0a0a0a;
+    box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+    background-color: #fafafa;
 }
 
 textarea {
@@ -265,18 +268,18 @@ textarea {
 }
 
 .form-submit {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, #ff4520 100%);
+    background: #0a0a0a;
     color: white;
     font-weight: bold;
     padding: 1rem 2.5rem;
     margin-top: 1rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .form-submit:hover {
-    box-shadow: 0 6px 25px rgba(255, 107, 53, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     transform: translateY(-2px);
 }
 
@@ -287,7 +290,7 @@ textarea {
     padding: 0.85rem 1.8rem;
     border-radius: 6px;
     font-weight: 700;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -304,7 +307,7 @@ textarea {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
     transition: left 0.3s ease;
 }
 
@@ -313,35 +316,37 @@ textarea {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--accent-color) 0%, #00a8d8 100%);
+    background: #0a0a0a;
     color: white;
-    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary:hover {
-    box-shadow: 0 6px 25px rgba(0, 212, 255, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     transform: translateY(-2px);
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, #ff4520 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    background: #f5f5f5;
+    color: #0a0a0a;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .btn-secondary:hover {
-    box-shadow: 0 6px 25px rgba(255, 107, 53, 0.5);
+    background: #f0f0f0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
 }
 
 .btn-success {
-    background: linear-gradient(135deg, var(--success-color) 0%, #22c55e 100%);
+    background: #4ade80;
     color: white;
-    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+    box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
 }
 
 .btn-success:hover {
-    box-shadow: 0 6px 25px rgba(74, 222, 128, 0.5);
+    box-shadow: 0 4px 16px rgba(74, 222, 128, 0.5);
     transform: translateY(-2px);
 }
 
@@ -365,12 +370,12 @@ textarea {
 }
 
 .product-card {
-    background-color: var(--card-bg);
+    background-color: #ffffff;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255, 107, 53, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #e8e8e8;
     position: relative;
 }
 
@@ -381,16 +386,16 @@ textarea {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(10, 10, 10, 0.02) 0%, transparent 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
 }
 
 .product-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 12px 48px rgba(255, 107, 53, 0.3), 0 0 40px rgba(0, 212, 255, 0.1);
-    border-color: rgba(255, 107, 53, 0.5);
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-color: #d0d0d0;
 }
 
 .product-card:hover::before {
@@ -401,7 +406,7 @@ textarea {
     width: 100%;
     height: 280px;
     object-fit: cover;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
     position: relative;
     overflow: hidden;
 }
@@ -413,35 +418,35 @@ textarea {
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+    background: radial-gradient(circle at 30% 30%, rgba(0, 0, 0, 0.02) 0%, transparent 70%);
 }
 
 .product-info {
     padding: 1.5rem;
-    background: linear-gradient(180deg, var(--card-bg) 0%, #1f1f1f 100%);
+    background: #ffffff;
 }
 
 .product-name {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--light-color);
+    color: #0a0a0a;
     margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
 }
 
 .product-price {
-    font-size: 1.6rem;
-    color: var(--secondary-color);
-    font-weight: bold;
+    font-size: 1.4rem;
+    color: #0a0a0a;
+    font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
 .product-price.discounted {
     text-decoration: line-through;
-    color: #666;
+    color: #999;
     margin-right: 0.5rem;
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
 .product-discount {
@@ -583,42 +588,42 @@ textarea {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
-    border: 1px solid rgba(255, 107, 53, 0.2);
+    border: 1px solid #e8e8e8;
     border-radius: 8px;
     overflow: hidden;
 }
 
 .cart-table th {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #252525 100%);
-    color: var(--light-color);
+    background: #f9f9f9;
+    color: #0a0a0a;
     padding: 1.2rem;
     text-align: left;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 700;
-    border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+    border-bottom: 2px solid #e8e8e8;
 }
 
 .cart-table td {
     padding: 1rem 1.2rem;
-    border-bottom: 1px solid rgba(255, 107, 53, 0.1);
-    color: var(--light-color);
-    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid #f0f0f0;
+    color: #333333;
+    background-color: #ffffff;
 }
 
 .cart-table tr:hover td {
-    background-color: rgba(255, 107, 53, 0.1);
+    background-color: #fafafa;
     transition: background-color 0.3s ease;
 }
 
 .cart-summary {
-    background: linear-gradient(135deg, var(--card-bg) 0%, #1f1f1f 100%);
+    background: #ffffff;
     padding: 2.5rem;
     border-radius: 8px;
     margin-top: 2rem;
     text-align: right;
-    border: 2px solid rgba(255, 107, 53, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .cart-summary-row {
@@ -626,14 +631,14 @@ textarea {
     justify-content: space-between;
     margin-bottom: 1rem;
     font-size: 1.1rem;
-    color: var(--light-color);
+    color: #333333;
 }
 
 .cart-summary-total {
     font-size: 1.6rem;
     font-weight: bold;
-    color: var(--secondary-color);
-    border-top: 2px solid rgba(255, 107, 53, 0.2);
+    color: #0a0a0a;
+    border-top: 1px solid #e8e8e8;
     padding-top: 1.5rem;
     margin-top: 1rem;
     text-transform: uppercase;
