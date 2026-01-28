@@ -44,7 +44,7 @@
         <!-- Rating -->
         {% if reviews.count > 0 %}
             <div class="product-detail-rating">
-                ⭐ {{ avg_rating|default:"N/A" }} out of 5 stars ({{ reviews.count }} reviews)
+                ⭐ {{ avg_rating|floatformat:1 }} out of 5 stars ({{ reviews.count }} reviews)
             </div>
         {% else %}
             <div class="product-detail-rating">
@@ -78,7 +78,7 @@
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="flex: 2;">Add to Cart</button>
-                <button type="button" class="btn btn-secondary" onclick="toggleWishlist()">❤️ {% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleWishlist()"> {% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</button>
             </form>
         {% else %}
             <button class="btn btn-secondary" disabled>Out of Stock</button>

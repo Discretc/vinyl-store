@@ -11,12 +11,13 @@
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="{% url 'home' %}" class="nav-logo">🎵 Vinyl Store</a>
+            <a href="{% url 'home' %}" class="nav-logo">📻 VinylTage</a>
             <ul class="nav-menu">
                 <li><a href="{% url 'product_list' %}" class="nav-link">Browse</a></li>
                 {% if request.session.user_type == 'customer' %}
                     <li><a href="{% url 'view_cart' %}" class="nav-link">Cart</a></li>
                     <li><a href="{% url 'view_wishlist' %}" class="nav-link">Wishlist</a></li>
+                    <li><a href="{% url 'view_click_history' %}" class="nav-link">History</a></li>
                     <li><a href="{% url 'order_history' %}" class="nav-link">Orders</a></li>
                     <li><a href="{% url 'logout' %}" class="nav-link logout-link">Logout ({{ request.session.customer_name }})</a></li>
                 {% elif request.session.user_type == 'vendor' %}

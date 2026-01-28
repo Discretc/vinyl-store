@@ -34,6 +34,9 @@ urlpatterns = [
     path('wishlist/', views.view_wishlist, name='view_wishlist'),
     path('wishlist/toggle/<int:product_id>/', views.toggle_wishlist, name='toggle_wishlist'),
 
+    # Click History
+    path('click-history/', views.view_click_history, name='view_click_history'),
+
     # Vendor Dashboard
     path('vendor/dashboard/', views.vendor_dashboard, name='vendor_dashboard'),
     path('vendor/product/add/', views.add_product, name='add_product'),

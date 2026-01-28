@@ -43,12 +43,16 @@
                         <div class="product-actions">
                             <a href="{% url 'product_detail' product.productID %}" class="btn btn-primary btn-small">View Details</a>
                             {% if product.stockQuantity > 0 %}
-                                <form method="post" action="{% url 'add_to_cart' product.productID %}" style="width: 100%;">
+                                <form method="post" action="{% url 'add_to_cart' product.productID %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="btn btn-success btn-small" style="width: 100%;">Add to Cart</button>
+                                    <button type="submit" class="btn btn-success btn-small">Add to Cart</button>
                                 </form>
                             {% endif %}
+                            <form method="post" action="{% url 'toggle_wishlist' product.productID %}" style="flex: 1;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-small" style="background-color: #f0f0f0 !important; color: #0a0a0a !important; border-color: #d0d0d0 !important; width: 100%;">Remove</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -57,7 +61,7 @@
     </div>
 {% else %}
     <div class="empty-state">
-        <div class="empty-state-icon">❤️</div>
+        <div class="empty-state-icon">♡</div>
         <div class="empty-state-message">Your wishlist is empty</div>
         <p>Add vinyl records to your wishlist to save them for later!</p>
         <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>

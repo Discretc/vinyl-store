@@ -8,26 +8,25 @@ All components have been implemented and tested. The application is fully functi
 
 ## 🚀 Quick Start (3 Steps)
 
-### Step 1: Install Dependencies
+### Step 1: Setup
 ```bash
-cd /Users/eve/Desktop/schoolWork/vinyl_store
+cd /path/to/vinyl_store
 python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+./venv/bin/pip install -r requirements.txt
 ```
 
 ### Step 2: Initialize Database
 ```bash
-python manage.py migrate
-python manage.py seed_data
+./venv/bin/python manage.py migrate
+./venv/bin/python manage.py seed_data
 ```
 
 ### Step 3: Run Server
 ```bash
-python manage.py runserver
+./venv/bin/python manage.py runserver 0.0.0.0:8000
 ```
 
-Then open: **http://127.0.0.1:8000/**
+Open: **http://localhost:8000/**
 
 ---
 
@@ -390,29 +389,28 @@ This project demonstrates:
 ## 📞 Quick Reference
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate
+./venv/bin/python manage.py runserver 0.0.0.0:8000     # Run server
+./venv/bin/python manage.py createsuperuser              # Create admin
+./venv/bin/python manage.py seed_data                   # Load sample data
+./venv/bin/python manage.py shell                       # Django shell
+```
 
-# Run development server
-python manage.py runserver
+---
 
-# Create superuser for admin
-python manage.py createsuperuser
+## 🔧 Troubleshooting
 
-# Load sample data
-python manage.py seed_data
+**"ModuleNotFoundError: No module named 'django'"**
+- Use explicit path: `./venv/bin/python manage.py runserver`
 
-# Make migrations
-python manage.py makemigrations store
+**"Permission denied" on scripts**
+- `chmod +x venv/bin/python`
 
-# Apply migrations
-python manage.py migrate
-
-# Access Django shell
-python manage.py shell
-
-# Deactivate virtual environment
-deactivate
+**Still having issues?**
+```bash
+rm -rf venv
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
+./venv/bin/python manage.py migrate
 ```
 
 ---

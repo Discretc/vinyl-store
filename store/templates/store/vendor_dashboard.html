@@ -16,7 +16,7 @@
     <div class="container">
         <h3>Statistics</h3>
         <p><strong>{{ total_products }}</strong> products</p>
-        <p style="color: var(--secondary-color); font-weight: bold; font-size: 1.2rem; margin-top: 0.5rem;">Total Sales: ${{ total_sales|floatformat:2 }}</p>
+        <p style="color: var(--dark-color); font-weight: bold; font-size: 1.2rem; margin-top: 0.5rem;">Total Sales: ${{ total_sales|floatformat:2 }}</p>
     </div>
 </div>
 
@@ -71,8 +71,10 @@
                         <td>{{ product.stockQuantity }}</td>
                         <td>{{ product.createdTime|date:"M d, Y" }}</td>
                         <td>
-                            <a href="{% url 'edit_product' product.productID %}" class="btn btn-small btn-primary">Edit</a>
-                            <button onclick="openImageUpload({{ product.productID }})" class="btn btn-small btn-secondary">Images</button>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <a href="{% url 'edit_product' product.productID %}" class="btn btn-small btn-primary">Edit</a>
+                                <button onclick="openImageUpload({{ product.productID }})" class="btn btn-small btn-secondary">Images</button>
+                            </div>
                         </td>
                     </tr>
                 {% endfor %}

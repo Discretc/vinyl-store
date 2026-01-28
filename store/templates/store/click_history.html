@@ -1,0 +1,45 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Click History - Vinyl Store{% endblock %}
+
+{% block content %}
+<h2 class="page-title">My Click History</h2>
+
+{% if click_history %}
+    <div class="container" style="max-width: 100%; margin-bottom: 2rem;">
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Store</th>
+                    <th>Price</th>
+                    <th>Viewed Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for history in click_history %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'product_detail' history.productID.productID %}">{{ history.productID.productName }}</a>
+                        </td>
+                        <td>{{ history.productID.storeID.storeName }}</td>
+                        <td>${{ history.productID.price|floatformat:2 }}</td>
+                        <td>{{ history.viewedDate|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'product_detail' history.productID.productID %}" class="btn btn-primary btn-small">View</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <div class="empty-state-message">No click history yet</div>
+        <p>Your viewed products will appear here</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+    </div>
+{% endif %}
+{% endblock %}

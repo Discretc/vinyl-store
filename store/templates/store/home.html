@@ -4,11 +4,11 @@
 
 {% block content %}
 <div class="hero">
-    <h1>🎵 Welcome to Vinyl Store</h1>
-    <p>Discover rare vinyl records from talented vendors around the world</p>
+    <h1>Welcome to VinylTage</h1>
+    <p>WE SHIP WORLDWIDE & ACCOMMODATE LOCAL PICK UP!</p>
     <div class="hero-buttons">
         {% if request.session.user_type != 'customer' %}
-            <a href="{% url 'customer_register' %}" class="btn btn-primary">Sign Up as Customer</a>
+            <a href="{% url 'customer_register' %}" class="btn btn-secondary">Sign Up as Customer</a>
         {% endif %}
         {% if request.session.user_type != 'vendor' %}
             <a href="{% url 'vendor_register' %}" class="btn btn-secondary">Become a Vendor</a>
@@ -18,7 +18,7 @@
 </div>
 
 <section class="featured-products">
-    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--primary-color);">Featured Products</h2>
+    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--black-color);">Featured Products</h2>
     <div class="product-grid">
         {% for product in featured_products %}
             <div class="product-card">

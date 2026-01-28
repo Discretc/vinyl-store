@@ -334,7 +334,7 @@ textarea {
 }
 
 .btn-secondary:hover {
-    background: #f0f0f0;
+    background: #563b3b;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
 }
@@ -450,7 +450,7 @@ textarea {
 }
 
 .product-discount {
-    background-color: var(--secondary-color);
+    background-color: black;
     color: white;
     padding: 0.25rem 0.5rem;
     border-radius: 3px;
@@ -461,7 +461,8 @@ textarea {
 .product-rating {
     color: #f39c12;
     font-size: 0.95rem;
-    margin-bottom: 0.5rem;
+   
+     margin-bottom: 0.5rem;
 }
 
 .product-stock {
@@ -494,8 +495,10 @@ textarea {
 /* ======================= HERO SECTION ======================= */
 
 .hero {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: white;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url('/Users/eve/Desktop/schoolWork/vinyl_store/media/product_images/vintage-record-player-in-retro-music-store-with-vinyl-collections-concept-of-retro-cassette-tape-player-music-memorabilia-historical-soundtracks-and-cultural-nostalgia-photo.jpeg')
+    background-position: center;
+    background-attachment: fixed;
+    color: var(--dark-color);
     padding: 4rem 2rem;
     text-align: center;
     border-radius: 10px;
@@ -510,7 +513,8 @@ textarea {
 .hero p {
     font-size: 1.2rem;
     margin-bottom: 2rem;
-    opacity: 0.9;
+    opacity: 1;
+    color: #555;
 }
 
 .hero-buttons {
@@ -548,7 +552,7 @@ textarea {
 
 .product-detail-price {
     font-size: 2rem;
-    color: var(--secondary-color);
+    color: var(--dark-color);
     font-weight: bold;
     margin-bottom: 1rem;
 }
@@ -694,7 +698,7 @@ textarea {
 
 .review-author {
     font-weight: bold;
-    color: var(--primary-color);
+    color: grey;
 }
 
 .review-date {

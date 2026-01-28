@@ -53,18 +53,19 @@
                     
                     {% with promo=product.promotions.all|first %}
                         {% if promo.is_active %}
-                            <p class="product-price discounted">${{ product.price|floatformat:2 }}</p>
-                            <p class="product-price">${{ product.price|add:promo.get_discount_amount|floatformat:2 }}
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <p class="product-price" style="margin: 0;">${{ product.price|floatformat:2 }}</p>
+                                <p class="product-price discounted" style="margin: 0; color: #999; text-decoration: line-through; font-size: 0.9rem;">${{ product.original_price|floatformat:2 }}</p>
                                 <span class="product-discount">-{{ promo.discountRate }}%</span>
-                            </p>
+                            </div>
                         {% else %}
                             <p class="product-price">${{ product.price|floatformat:2 }}</p>
                         {% endif %}
                     {% endwith %}
 
-                    {% with review_count=product.reviews.count avg_rating=product.reviews.aggregate|dictsort:"rating__avg" %}
+                    {% with review_count=product.reviews.count %}
                         {% if review_count > 0 %}
-                            <p class="product-rating">⭐ {{ avg_rating }} ({{ review_count }} reviews)</p>
+                            <p class="product-rating"> {{ product.avg_rating|floatformat:1 }} stars ({{ review_count }} reviews)</p>
                         {% endif %}
                     {% endwith %}
 

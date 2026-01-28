@@ -174,7 +174,20 @@ def home(request):
 
 def product_list(request):
     """Display all products with search and filtering."""
-    products = Product.objects.filter(availability=True).select_related('storeID')
+    products = Product.objects.filter(availability=True).select_related('storeID').prefetch_related('promotions').annotate(
+        avg_rating=Avg('reviews__rating')
+    )
+
+    # Add original_price for each product based on promotions
+    for product in products:
+        promo = product.promotions.first()
+        if promo and promo.is_active():
+            # Calculate original price from discounted price
+            # price = original_price * (1 - discountRate/100)
+            # original_price = price / (1 - discountRate/100)
+            product.original_price = product.price / (1 - (promo.discountRate / 100))
+        else:
+            product.original_price = product.price
 
     # Search by product name or description
     search_query = request.GET.get('search', '').strip()
@@ -223,7 +236,10 @@ def product_detail(request, product_id):
 
     # Get product media
     media = product.media.all()
+    # Try to get primary image, fall back to first image if no primary is marked
     primary_image = media.filter(isPrimary=True).first()
+    if not primary_image and media.exists():
+        primary_image = media.first()
 
     # Get reviews
     reviews = product.reviews.all()
@@ -557,7 +573,10 @@ def add_review(request, product_id):
 def toggle_wishlist(request, product_id):
     """Add or remove product from wishlist."""
     if 'customer_id' not in request.session:
-        return JsonResponse({'error': 'Please log in'}, status=401)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Please log in'}, status=401)
+        messages.error(request, "Please log in to manage your wishlist.")
+        return redirect('customer_login')
 
     product = get_object_or_404(Product, productID=product_id)
     try:
@@ -583,13 +602,25 @@ def toggle_wishlist(request, product_id):
         )
 
         if created:
-            return JsonResponse({'success': True, 'message': 'Added to wishlist', 'action': 'added'})
+            message = 'Added to wishlist'
+            action = 'added'
         else:
             wishlist_item.delete()
-            return JsonResponse({'success': True, 'message': 'Removed from wishlist', 'action': 'removed'})
+            message = 'Removed from wishlist'
+            action = 'removed'
+
+        # Return JSON if AJAX request, otherwise redirect
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': message, 'action': action})
+        else:
+            messages.success(request, message)
+            return redirect('view_wishlist')
 
     except Customer.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=400)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'User not found'}, status=400)
+        messages.error(request, "User not found.")
+        return redirect('view_wishlist')
 
 
 def view_wishlist(request):
@@ -604,6 +635,24 @@ def view_wishlist(request):
 
         context = {'wishlist_items': wishlist_items}
         return render(request, 'store/wishlist.html', context)
+    except Customer.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('customer_login')
+
+
+def view_click_history(request):
+    """View customer's click history (viewed products)."""
+    if 'customer_id' not in request.session:
+        messages.error(request, "Please log in to view your click history.")
+        return redirect('customer_login')
+
+    try:
+        customer = Customer.objects.get(customerID=request.session['customer_id'])
+        # Get click history ordered by most recent first
+        click_history = customer.click_history.all().select_related('productID').order_by('-viewedDate')
+
+        context = {'click_history': click_history}
+        return render(request, 'store/click_history.html', context)
     except Customer.DoesNotExist:
         messages.error(request, "User not found.")
         return redirect('customer_login')
