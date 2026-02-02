@@ -29,17 +29,17 @@
         <p style="color: #666; font-size: 1.1rem; margin-bottom: 1rem;">By: {{ product.storeID.storeName }}</p>
 
         <!-- Price Section -->
-        {% with active_promo=active_promo %}
-            {% if active_promo %}
-                <p class="product-price discounted">${{ product.price|floatformat:2 }}</p>
-                <p class="product-detail-price">
-                    ${{ product.price|add:active_promo.get_discount_amount|floatformat:2 }}
-                    <span class="product-discount">-{{ active_promo.discountRate }}% OFF</span>
-                </p>
-            {% else %}
-                <p class="product-detail-price">${{ product.price|floatformat:2 }}</p>
-            {% endif %}
-        {% endwith %}
+        {% if active_promo %}
+            <p style="text-decoration: line-through; color: #999; font-size: 1.2rem; margin-bottom: 0.5rem;">
+                ${{ product.price|floatformat:2 }}
+            </p>
+            <p class="product-detail-price">
+                ${{ discounted_price|floatformat:2 }}
+                <span class="product-discount">-{{ active_promo.discountRate }}% OFF</span>
+            </p>
+        {% else %}
+            <p class="product-detail-price">${{ product.price|floatformat:2 }}</p>
+        {% endif %}
 
         <!-- Rating -->
         {% if reviews.count > 0 %}
@@ -85,7 +85,7 @@
         {% endif %}
 
         <!-- Store Info -->
-        <div style="background-color: var(--light-color); padding: 1.5rem; border-radius: 10px; margin-top: 2rem;">
+        <div style="background-color: var(--border-color); padding: 1.5rem; border-radius: 10px; margin-top: 2rem;">
             <h3>Seller Information</h3>
             <p><strong>{{ product.storeID.storeName }}</strong></p>
             {% if product.storeID.description %}
@@ -100,27 +100,33 @@
     <h2>Reviews ({{ reviews.count }})</h2>
 
     {% if request.session.user_type == 'customer' %}
-        <div class="review-form">
-            <h3>Write a Review</h3>
-            <form id="review-form" method="post" action="{% url 'add_review' product.productID %}" style="display: flex; flex-direction: column; gap: 1rem;">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label for="rating">Rating:</label>
-                    <select id="rating" name="rating" required>
-                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                        <option value="4">⭐⭐⭐⭐ Good</option>
-                        <option value="3">⭐⭐⭐ Average</option>
-                        <option value="2">⭐⭐ Poor</option>
-                        <option value="1">⭐ Terrible</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="comment">Comment:</label>
-                    <textarea id="comment" name="comment" placeholder="Share your thoughts..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Post Review</button>
-            </form>
-        </div>
+        {% if has_purchased %}
+            <div class="review-form">
+                <h3>Write a Review</h3>
+                <form id="review-form" method="post" action="{% url 'add_review' product.productID %}" style="display: flex; flex-direction: column; gap: 1rem;">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="rating">Rating:</label>
+                        <select id="rating" name="rating" required>
+                            <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                            <option value="4">⭐⭐⭐⭐ Good</option>
+                            <option value="3">⭐⭐⭐ Average</option>
+                            <option value="2">⭐⭐ Poor</option>
+                            <option value="1">⭐ Terrible</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment">Comment:</label>
+                        <textarea id="comment" name="comment" placeholder="Share your thoughts..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Post Review</button>
+                </form>
+            </div>
+        {% else %}
+            <div style="background-color: var(--light-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; color: #666;">
+                <p>You must purchase this product before you can leave a review.</p>
+            </div>
+        {% endif %}
     {% endif %}
 
     {% if reviews %}

@@ -42,4 +42,11 @@ urlpatterns = [
     path('vendor/product/add/', views.add_product, name='add_product'),
     path('vendor/product/<int:product_id>/edit/', views.edit_product, name='edit_product'),
     path('vendor/product/<int:product_id>/upload-image/', views.upload_product_image, name='upload_product_image'),
+    path('vendor/image/<int:media_id>/set-primary/', views.set_primary_image, name='set_primary_image'),
+    path('vendor/image/<int:media_id>/delete/', views.delete_product_image, name='delete_product_image'),
+    path('vendor/product/<int:product_id>/add-promotion/', views.add_promotion, name='add_promotion'),
+    path('vendor/promotion/<int:promotion_id>/delete/', views.delete_promotion, name='delete_promotion'),
+    path('vendor/promotion/<int:promotion_id>/toggle-status/', views.toggle_promotion_status, name='toggle_promotion_status'),
+    path('vendor/orders/', views.vendor_orders, name='vendor_orders'),
+    path('vendor/order-item/<int:order_item_id>/update-status/', views.update_order_status, name='update_order_status'),
 ]

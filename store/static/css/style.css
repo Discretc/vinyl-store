@@ -12,24 +12,26 @@
 :root {
     --primary-color: #ffffff;
     --secondary-color: #f5f5f5;
-    --accent-color: #0a0a0a;
-    --light-color: #f0f0f0;
-    --dark-color: #333333;
+    --accent-color: #000000;
+    --light-color: #f8f8f8;
+    --dark-color: #1a1a1a;
     --success-color: #4ade80;
     --warning-color: #fbbf24;
     --error-color: #f87171;
-    --text-color: #333333;
-    --border-color: #e0e0e0;
-    --vinyl-green: #00d084;
-    --vinyl-pink: #ff1493;
+    --text-color: #1a1a1a;
+    --border-color: #e5e5e5;
+    --vinyl-red: #dc2626;
+    --vinyl-blue: #3b82f6;
+    --vinyl-orange: #f97316;
     --card-bg: #ffffff;
+    --grey: #5e6165; ;
 }
 
 body {
-    font-family: 'Assistant', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     line-height: 1.6;
     color: var(--text-color);
-    background-color: #ffffff;
+    background-color: #fafafa;
     background-image: none;
 }
 
@@ -62,12 +64,12 @@ button:hover {
 
 .navbar {
     background-color: #ffffff;
-    padding: 1rem 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    padding: 1.2rem 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     position: sticky;
     top: 0;
     z-index: 1000;
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid #e5e5e5;
 }
 
 .nav-container {
@@ -80,15 +82,17 @@ button:hover {
 }
 
 .nav-logo {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #0a0a0a;
-    transition: transform 0.3s ease;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #000000;
+    transition: opacity 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .nav-logo:hover {
-    transform: scale(1.05);
-    color: #666666;
+    opacity: 0.7;
+    color: #000000;
 }
 
 .nav-menu {
@@ -99,22 +103,23 @@ button:hover {
 }
 
 .nav-link {
-    color: #333333;
+    color: #1a1a1a;
     padding: 0.5rem 1rem;
-    transition: background-color 0.3s ease;
-    border-radius: 5px;
+    transition: all 0.2s ease;
+    border-radius: 2px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .nav-link:hover {
-    background-color: #f0f0f0;
-    color: #0a0a0a;
-}
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--secondary-color);
+    background-color: #000000;
+    color: #ffffff;
 }
 
 .logout-link {
-    color: var(--secondary-color);
+    color: var(--grey);
     font-weight: bold;
 }
 
@@ -192,18 +197,21 @@ button:hover {
 .container {
     background-color: white;
     padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     margin: 0 auto;
+    border: 1px solid #e5e5e5;
 }
 
 .page-title {
-    font-size: 2.5rem;
+    font-size: 2rem;
     margin-bottom: 2rem;
-    color: #0a0a0a;
-    border-bottom: 2px solid #e0e0e0;
+    color: #000000;
+    border-bottom: 3px solid #000000;
     padding-bottom: 1rem;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 /* ======================= FORMS ======================= */
@@ -222,45 +230,44 @@ form {
 
 label {
     font-weight: 600;
-    color: #0a0a0a;
+    color: #000000;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
 }
-
+.featured-products h2,
+.section-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1.5rem;
+}
 input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="number"],
 input[type="date"],
+input[type="datetime-local"],
 textarea,
 select {
-    padding: 0.9rem 1.2rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 2px;
+    font-size: 0.95rem;
     font-family: inherit;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     background-color: #ffffff;
-    color: #333333;
-    caret-color: #0a0a0a;
-}
-
-input[type="text"]::placeholder,
-input[type="email"]::placeholder,
-input[type="password"]::placeholder,
-input[type="number"]::placeholder,
-textarea::placeholder {
-    color: #999999;
+    color: #1a1a1a;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: #0a0a0a;
-    box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
-    background-color: #fafafa;
+    border-color: #000000;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
 }
 
 textarea {
@@ -288,56 +295,40 @@ textarea {
 
 .btn {
     display: inline-block;
-    padding: 0.85rem 1.8rem;
-    border-radius: 6px;
-    font-weight: 700;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0.75rem 1.5rem;
+    border-radius: 2px;
+    font-weight: 600;
+    transition: all 0.2s ease;
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border: none;
+    border: 2px solid transparent;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.1);
-    transition: left 0.3s ease;
-}
-
-.btn:hover::before {
-    left: 100%;
+    font-size: 0.85rem;
 }
 
 .btn-primary {
-    background: #0a0a0a;
+    background: #000000;
     color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-color: #000000;
 }
 
 .btn-primary:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    transform: translateY(-2px);
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #f5f5f5;
-    color: #0a0a0a;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #000000;
 }
 
 .btn-secondary:hover {
-    background: #563b3b;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
+    background: #000000;
+    color: #ffffff;
+    transform: translateY(-1px);
 }
 
 .btn-success {
@@ -372,75 +363,52 @@ textarea {
 
 .product-card {
     background-color: #ffffff;
-    border-radius: 8px;
+    border-radius: 4px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid #e8e8e8;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    border: 1px solid #e5e5e5;
     position: relative;
 }
 
-.product-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(10, 10, 10, 0.02) 0%, transparent 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
 .product-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border-color: #d0d0d0;
-}
-
-.product-card:hover::before {
-    opacity: 1;
 }
 
 .product-image {
     width: 100%;
-    height: 280px;
+    height: 300px;
     object-fit: cover;
-    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.product-image::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(0, 0, 0, 0.02) 0%, transparent 70%);
+    background: #f5f5f5;
+    display: block;
 }
 
 .product-info {
-    padding: 1.5rem;
+    padding: 1.25rem;
     background: #ffffff;
 }
 
 .product-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #0a0a0a;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1a1a1a;
     margin-bottom: 0.5rem;
-    text-transform: capitalize;
-    letter-spacing: 0.3px;
+    line-height: 1.4;
+    min-height: 2.8em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .product-price {
-    font-size: 1.4rem;
-    color: #0a0a0a;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    color: #1a1a1a;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
 }
 
 .product-price.discounted {
@@ -496,26 +464,37 @@ textarea {
 /* ======================= HERO SECTION ======================= */
 
 .hero {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url('/Users/eve/Desktop/schoolWork/vinyl_store/media/product_images/vintage-record-player-in-retro-music-store-with-vinyl-collections-concept-of-retro-cassette-tape-player-music-memorabilia-historical-soundtracks-and-cultural-nostalgia-photo.jpeg')
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/media/product_images/vinyl1.jpg');
+    background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    color: var(--dark-color);
+    color: #ffffff;
     padding: 4rem 2rem;
     text-align: center;
-    border-radius: 10px;
+    border-radius: 0;
     margin-bottom: 3rem;
+    border-top: 3px solid #000;
+    border-bottom: 3px solid #000;
 }
 
 .hero h1 {
-    font-size: 3rem;
+    font-size: 2.5rem;
     margin-bottom: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .hero p {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     margin-bottom: 2rem;
     opacity: 1;
-    color: #555;
+    color: #ffffff;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .hero-buttons {
@@ -547,7 +526,7 @@ textarea {
 
 .product-detail-info h1 {
     font-size: 2rem;
-    color: var(--primary-color);
+    color: var(--dark-color);
     margin-bottom: 1rem;
 }
 
@@ -593,32 +572,33 @@ textarea {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
     overflow: hidden;
 }
 
 .cart-table th {
-    background: #f9f9f9;
-    color: #0a0a0a;
-    padding: 1.2rem;
+    background: #f8f8f8;
+    color: #000000;
+    padding: 1rem;
     text-align: left;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 700;
-    border-bottom: 2px solid #e8e8e8;
+    font-weight: 600;
+    border-bottom: 2px solid #e5e5e5;
+    font-size: 0.85rem;
 }
 
 .cart-table td {
-    padding: 1rem 1.2rem;
+    padding: 1rem;
     border-bottom: 1px solid #f0f0f0;
-    color: #333333;
+    color: #1a1a1a;
     background-color: #ffffff;
 }
 
 .cart-table tr:hover td {
     background-color: #fafafa;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.2s ease;
 }
 
 .cart-summary {

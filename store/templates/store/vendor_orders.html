@@ -1,0 +1,121 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Manage Orders - Vinyl Store{% endblock %}
+
+{% block content %}
+<h2 class="page-title">Manage Orders</h2>
+
+<div style="margin-bottom: 1rem;">
+    <a href="{% url 'vendor_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+
+{% if orders_data %}
+    <div class="container">
+        {% for order_data in orders_data %}
+            {% with order=order_data.order items=order_data.items %}
+            <div style="padding: 1.5rem; border: 2px solid var(--border-color); border-radius: 10px; margin-bottom: 1.5rem;">
+                <!-- Order Header -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <strong>Order #{{ order.orderID }}</strong>
+                        <p style="color: #666; font-size: 0.9rem;">{{ order.orderDate|date:"M d, Y H:i" }}</p>
+                    </div>
+                    <div>
+                        <strong>Customer:</strong>
+                        <p style="color: #666;">{{ order.customerID.firstName }} {{ order.customerID.lastName }}</p>
+                        <p style="color: #999; font-size: 0.85rem;">{{ order.customerID.email }}</p>
+                    </div>
+                    <div>
+                        <strong>Shipping Address:</strong>
+                        <p style="color: #666; font-size: 0.9rem;">{{ order.shippingAddress|truncatewords:10 }}</p>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div style="margin-top: 1rem;">
+                    <strong style="display: block; margin-bottom: 0.75rem;">Your Products in This Order:</strong>
+                    {% for item in items %}
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap: 1rem; align-items: center; padding: 1rem; background-color: var(--light-color); border-radius: 8px; margin-bottom: 0.75rem;">
+                            <div>
+                                <a href="{% url 'product_detail' item.productID.productID %}" style="font-weight: 500; color: var(--dark-color);">
+                                    {{ item.productID.productName }}
+                                </a>
+                            </div>
+                            <div style="text-align: center;">
+                                <span style="color: #666; font-size: 0.85rem;">Qty:</span>
+                                <strong>{{ item.quantity }}</strong>
+                            </div>
+                            <div style="text-align: center;">
+                                <span style="color: #666; font-size: 0.85rem;">Price:</span>
+                                <strong>${{ item.paidPrice|floatformat:2 }}</strong>
+                            </div>
+                            <div style="text-align: center;">
+                                <span style="color: #666; font-size: 0.85rem;">Total:</span>
+                                <strong>${{ item.paidPrice|floatformat:2 }}</strong>
+                            </div>
+                            <div>
+                                <form class="status-form" data-item-id="{{ item.orderItemID }}" style="display: flex; gap: 0.5rem; align-items: center;">
+                                    {% csrf_token %}
+                                    <select name="status" class="status-select" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 5px; font-size: 0.9rem;">
+                                        <option value="Processing" {% if item.latest_status.status == 'Processing' %}selected{% endif %}>Processing</option>
+                                        <option value="Holding" {% if item.latest_status.status == 'Holding' %}selected{% endif %}>Holding</option>
+                                        <option value="Shipping" {% if item.latest_status.status == 'Shipping' %}selected{% endif %}>Shipping</option>
+                                        <option value="Completed" {% if item.latest_status.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                        <option value="Cancelled" {% if item.latest_status.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-small btn-primary">Update</button>
+                                </form>
+                                <p style="color: #999; font-size: 0.75rem; margin-top: 0.25rem;">
+                                    Current: <strong style="color: {% if item.latest_status.status == 'Completed' %}var(--success-color){% elif item.latest_status.status == 'Cancelled' %}var(--error-color){% elif item.latest_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %};">{{ item.latest_status.status }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <div class="empty-state-message">No orders yet</div>
+        <p>Orders containing your products will appear here</p>
+        <a href="{% url 'vendor_dashboard' %}" class="btn btn-primary" style="margin-top: 1rem;">Back to Dashboard</a>
+    </div>
+{% endif %}
+
+<script>
+document.querySelectorAll('.status-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const itemId = this.dataset.itemId;
+        const formData = new FormData(this);
+        const statusSelect = this.querySelector('.status-select');
+        const newStatus = statusSelect.value;
+        
+        fetch(`/vendor/order-item/${itemId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Status updated to ${newStatus} successfully!`);
+                location.reload();
+            } else {
+                alert(data.error || 'Error updating status');
+            }
+        })
+        .catch(error => {
+            alert('Error updating status');
+            console.error(error);
+        });
+    });
+});
+</script>
+{% endblock %}

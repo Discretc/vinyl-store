@@ -247,19 +247,29 @@ def product_detail(request, product_id):
 
     # Get active promotions
     active_promo = None
+    discounted_price = None
     active_promotions = product.promotions.filter(status='active')
     for promo in active_promotions:
         if promo.is_active():
             active_promo = promo
+            # Calculate the discounted price
+            discount_amount = promo.get_discount_amount(product.price)
+            discounted_price = product.price - discount_amount
             break
 
-    # Check if product is in user's wishlist
+    # Check if product is in user's wishlist and if customer has purchased the product
     in_wishlist = False
+    has_purchased = False
     if 'customer_id' in request.session:
         try:
             customer = Customer.objects.get(customerID=request.session['customer_id'])
             in_wishlist = WishlistItem.objects.filter(
                 customerID=customer, productID=product
+            ).exists()
+            # Check if customer has purchased this product
+            has_purchased = OrderItem.objects.filter(
+                orderID__customerID=customer,
+                productID=product
             ).exists()
         except Customer.DoesNotExist:
             pass
@@ -272,7 +282,9 @@ def product_detail(request, product_id):
         'avg_rating': avg_rating,
         'review_count': reviews.count(),
         'active_promo': active_promo,
+        'discounted_price': discounted_price,
         'in_wishlist': in_wishlist,
+        'has_purchased': has_purchased,
     }
     return render(request, 'store/product_detail.html', context)
 
@@ -541,6 +553,16 @@ def add_review(request, product_id):
     product = get_object_or_404(Product, productID=product_id)
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
+        
+        # Check if customer has purchased this product
+        has_purchased = OrderItem.objects.filter(
+            orderID__customerID=customer,
+            productID=product
+        ).exists()
+        
+        if not has_purchased:
+            return JsonResponse({'error': 'You can only review products you have purchased'}, status=403)
+        
         rating = int(request.POST.get('rating', 5))
         comment = request.POST.get('comment', '').strip()
 
@@ -748,7 +770,16 @@ def edit_product(request, product_id):
             messages.success(request, "Product updated successfully!")
             return redirect('vendor_dashboard')
 
-        context = {'product': product}
+        # Get existing promotions
+        promotions = product.promotions.all().order_by('-createdTime')
+        # Get product images
+        media = product.media.all().order_by('sortedOrder')
+        
+        context = {
+            'product': product,
+            'promotions': promotions,
+            'media': media,
+        }
         return render(request, 'store/edit_product.html', context)
     except Vendor.DoesNotExist:
         messages.error(request, "Vendor not found.")
@@ -785,6 +816,260 @@ def upload_product_image(request, product_id):
             'success': True,
             'message': 'Image uploaded successfully',
             'media_id': media.mediaID
+        })
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_POST
+def set_primary_image(request, media_id):
+    """Set an existing image as primary (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        media = get_object_or_404(
+            ProductMedia,
+            mediaID=media_id,
+            productID__storeID=vendor.store
+        )
+        
+        # Unset all other primary images for this product
+        media.productID.media.filter(isPrimary=True).update(isPrimary=False)
+        
+        # Set this image as primary
+        media.isPrimary = True
+        media.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Primary image updated successfully'
+        })
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_POST
+def delete_product_image(request, media_id):
+    """Delete a product image (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        media = get_object_or_404(
+            ProductMedia,
+            mediaID=media_id,
+            productID__storeID=vendor.store
+        )
+        
+        # Delete the image file and database record
+        media.mediaURL.delete()
+        media.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Image deleted successfully'
+        })
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+# ======================= PROMOTION MANAGEMENT =======================
+
+@require_POST
+def add_promotion(request, product_id):
+    """Add a promotion/discount to a product (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        product = get_object_or_404(Product, productID=product_id, storeID=vendor.store)
+        
+        discount_rate = request.POST.get('discount_rate', '').strip()
+        start_date = request.POST.get('start_date', '').strip()
+        end_date = request.POST.get('end_date', '').strip()
+        
+        if not discount_rate or not start_date or not end_date:
+            return JsonResponse({'error': 'All fields are required'}, status=400)
+        
+        discount_rate = Decimal(discount_rate)
+        if discount_rate <= 0 or discount_rate > 100:
+            return JsonResponse({'error': 'Discount rate must be between 0 and 100'}, status=400)
+        
+        # Parse datetime strings
+        from datetime import datetime
+        start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        
+        if end_dt <= start_dt:
+            return JsonResponse({'error': 'End date must be after start date'}, status=400)
+        
+        promotion = Promotion.objects.create(
+            productID=product,
+            discountRate=discount_rate,
+            startDate=start_dt,
+            endDate=end_dt,
+            status='active'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Promotion added successfully',
+            'promotion_id': promotion.promotionID
+        })
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_POST
+def delete_promotion(request, promotion_id):
+    """Delete a promotion (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        promotion = get_object_or_404(
+            Promotion,
+            promotionID=promotion_id,
+            productID__storeID=vendor.store
+        )
+        
+        promotion.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Promotion deleted successfully'
+        })
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_POST
+def toggle_promotion_status(request, promotion_id):
+    """Toggle promotion active/inactive status (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        promotion = get_object_or_404(
+            Promotion,
+            promotionID=promotion_id,
+            productID__storeID=vendor.store
+        )
+        
+        # Toggle between active and inactive
+        promotion.status = 'inactive' if promotion.status == 'active' else 'active'
+        promotion.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Promotion {promotion.status}',
+            'status': promotion.status
+        })
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+# ======================= VENDOR ORDER MANAGEMENT =======================
+
+def vendor_orders(request):
+    """View all orders containing vendor's products."""
+    if 'vendor_id' not in request.session:
+        messages.error(request, "Please log in as a vendor.")
+        return redirect('vendor_login')
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        store = vendor.store
+        
+        # Get all order items for products in this vendor's store
+        order_items = OrderItem.objects.filter(
+            productID__storeID=store
+        ).select_related(
+            'orderID', 'orderID__customerID', 'productID'
+        ).prefetch_related('statuses').order_by('-orderID__orderDate')
+        
+        # Group order items by order for better display
+        orders_dict = {}
+        for item in order_items:
+            order = item.orderID
+            if order.orderID not in orders_dict:
+                orders_dict[order.orderID] = {
+                    'order': order,
+                    'items': []
+                }
+            # Add latest status to item
+            item.latest_status = item.statuses.last()
+            orders_dict[order.orderID]['items'].append(item)
+        
+        # Convert to list and sort by order date
+        orders_data = sorted(orders_dict.values(), 
+                           key=lambda x: x['order'].orderDate, 
+                           reverse=True)
+        
+        context = {
+            'vendor': vendor,
+            'store': store,
+            'orders_data': orders_data,
+        }
+        return render(request, 'store/vendor_orders.html', context)
+    except Vendor.DoesNotExist:
+        messages.error(request, "Vendor not found.")
+        return redirect('vendor_login')
+
+
+@require_POST
+def update_order_status(request, order_item_id):
+    """Update the status of an order item (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        store = vendor.store
+        
+        # Get the order item and verify it belongs to this vendor's store
+        order_item = get_object_or_404(
+            OrderItem, 
+            orderItemID=order_item_id,
+            productID__storeID=store
+        )
+        
+        new_status = request.POST.get('status', '').strip()
+        
+        # Validate status
+        valid_statuses = [choice[0] for choice in OrderStatus.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return JsonResponse({'error': 'Invalid status'}, status=400)
+        
+        # Create new status record
+        status_record = OrderStatus.objects.create(
+            orderItemID=order_item,
+            status=new_status
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Status updated to {new_status}',
+            'status': new_status,
+            'updated_date': status_record.updatedDate.strftime('%b %d, %Y %H:%M')
         })
     except Vendor.DoesNotExist:
         return JsonResponse({'error': 'Vendor not found'}, status=400)
