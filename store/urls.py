@@ -27,6 +27,7 @@ urlpatterns = [
     path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
     path('orders/', views.order_history, name='order_history'),
     path('orders/item/<int:order_item_id>/cancel/', views.cancel_order_item, name='cancel_order_item'),
+    path('orders/item/<int:order_item_id>/refund-request/', views.request_refund, name='request_refund'),
 
     # Reviews
     path('products/<int:product_id>/review/', views.add_review, name='add_review'),
@@ -51,6 +52,7 @@ urlpatterns = [
     path('vendor/promotion/<int:promotion_id>/toggle-status/', views.toggle_promotion_status, name='toggle_promotion_status'),
     path('vendor/orders/', views.vendor_orders, name='vendor_orders'),
     path('vendor/order-item/<int:order_item_id>/update-status/', views.update_order_status, name='update_order_status'),
+    path('vendor/refund-request/<int:refund_id>/respond/', views.respond_refund, name='respond_refund'),
 
     # Shop Pages
     path('shops/<int:store_id>/', views.shop_detail, name='shop_detail'),

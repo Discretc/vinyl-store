@@ -9,7 +9,7 @@ import json
 
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
-    OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia
+    OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia, RefundRequest
 )
 
 
@@ -551,14 +551,18 @@ def order_detail(request, order_id):
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
         order = get_object_or_404(Order, orderID=order_id, customerID=customer)
-        order_items = order.items.all().prefetch_related('statuses')
+        order_items = order.items.all().prefetch_related('statuses', 'refund_requests')
         
         # Add subtotal and cancellable flag to each order item
         for item in order_items:
             item.subtotal = item.paidPrice * item.quantity
             latest_status = item.statuses.last()
-            # Item can be cancelled if status is Processing or Holding (not Shipping, Completed, or Cancelled)
+            # Item can be cancelled if status is Processing or Holding
             item.can_cancel = latest_status and latest_status.status in ['Processing', 'Holding']
+            # Item can request refund if Shipping or Completed
+            item.can_request_refund = latest_status and latest_status.status in ['Shipping', 'Completed']
+            # Check for existing pending refund
+            item.has_pending_refund = item.refund_requests.filter(status='pending').exists()
 
         context = {
             'order': order,
@@ -578,7 +582,7 @@ def order_history(request):
 
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
-        orders = customer.orders.all().prefetch_related('items__statuses')
+        orders = customer.orders.all().prefetch_related('items__statuses').order_by('-orderDate')
         
         # Filter by status if provided
         status_filter = request.GET.get('status', '').strip()
@@ -662,6 +666,39 @@ def cancel_order_item(request, order_item_id):
 
 
 # ======================= REVIEW VIEWS =======================
+
+
+@require_POST
+def request_refund(request, order_item_id):
+    """Submit a refund request for a shipped/completed order item."""
+    if 'customer_id' not in request.session:
+        return JsonResponse({'error': 'Please log in'}, status=401)
+
+    try:
+        customer = Customer.objects.get(customerID=request.session['customer_id'])
+        order_item = get_object_or_404(
+            OrderItem,
+            orderItemID=order_item_id,
+            orderID__customerID=customer
+        )
+
+        latest_status = order_item.statuses.last()
+        if not latest_status or latest_status.status not in ['Shipping', 'Completed']:
+            return JsonResponse({'error': 'Refund can only be requested for shipped or completed items'}, status=400)
+
+        if order_item.refund_requests.filter(status='pending').exists():
+            return JsonResponse({'error': 'A refund request is already pending for this item'}, status=400)
+
+        reason = request.POST.get('reason', '').strip()
+        if not reason:
+            return JsonResponse({'error': 'Please provide a reason'}, status=400)
+
+        RefundRequest.objects.create(orderItemID=order_item, reason=reason)
+        return JsonResponse({'success': True, 'message': 'Refund request submitted successfully'})
+    except Customer.DoesNotExist:
+        return JsonResponse({'error': 'Customer not found'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 @require_POST
 def add_review(request, product_id):
@@ -772,7 +809,25 @@ def view_wishlist(request):
 
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
-        wishlist_items = customer.wishlist_items.all().select_related('productID')
+        wishlist_items = list(
+            customer.wishlist_items.all()
+            .select_related('productID')
+            .prefetch_related('productID__promotions')
+        )
+
+        now = timezone.now()
+        for item in wishlist_items:
+            active_promo = next(
+                (p for p in item.productID.promotions.all() if p.is_active()),
+                None
+            )
+            item.active_promo = active_promo
+            item.has_active_promo = active_promo is not None
+
+        wishlist_items.sort(key=lambda x: (
+            not x.has_active_promo,
+            x.active_promo.endDate if x.active_promo else timezone.now().replace(year=9999)
+        ))
 
         context = {'wishlist_items': wishlist_items}
         return render(request, 'store/wishlist.html', context)
@@ -1212,6 +1267,43 @@ def toggle_promotion_status(request, promotion_id):
         return JsonResponse({'error': str(e)}, status=400)
 
 
+@require_POST
+def respond_refund(request, refund_id):
+    """Vendor approves or rejects a customer refund request."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        refund = get_object_or_404(RefundRequest, refundRequestID=refund_id,
+                                   orderItemID__productID__storeID=vendor.store)
+        action = request.POST.get('action')
+        if action not in ['approve', 'reject']:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+
+        vendor_note = request.POST.get('vendor_note', '').strip()
+        refund.status = 'approved' if action == 'approve' else 'rejected'
+        refund.vendorNote = vendor_note
+        refund.responseDate = timezone.now()
+        refund.save()
+
+        if action == 'approve':
+            order_item = refund.orderItemID
+            OrderStatus.objects.create(orderItemID=order_item, status='Cancelled')
+            product = order_item.productID
+            product.stockQuantity += order_item.quantity
+            product.save()
+            message = 'Refund approved and item cancelled'
+        else:
+            message = 'Refund request rejected'
+
+        return JsonResponse({'success': True, 'message': message})
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
 # ======================= VENDOR ORDER MANAGEMENT =======================
 
 def vendor_orders(request):
@@ -1244,6 +1336,10 @@ def vendor_orders(request):
             item.latest_status = item.statuses.last()
             # Vendors cannot update status if item is cancelled by customer
             item.can_update_status = item.latest_status.status != 'Cancelled' if item.latest_status else True
+            # Computed subtotal for display
+            item.subtotal = item.paidPrice * item.quantity
+            # Pending refund request from customer
+            item.pending_refund = item.refund_requests.filter(status='pending').first()
             orders_dict[order.orderID]['items'].append(item)
         
         # Convert to list and sort by order date

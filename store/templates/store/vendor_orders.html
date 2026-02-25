@@ -51,24 +51,25 @@
                             </div>
                             <div style="text-align: center;">
                                 <span style="color: #666; font-size: 0.85rem;">Total:</span>
-                                <strong>${{ item.paidPrice|floatformat:2 }}</strong>
+                                <strong>${{ item.subtotal|floatformat:2 }}</strong>
                             </div>
                             <div>
                                 {% if item.can_update_status %}
-                                    <form class="status-form" data-item-id="{{ item.orderItemID }}" style="display: flex; gap: 0.5rem; align-items: center;">
-                                        {% csrf_token %}
-                                        <select name="status" class="status-select" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 5px; font-size: 0.9rem;">
-                                            <option value="Processing" {% if item.latest_status.status == 'Processing' %}selected{% endif %}>Processing</option>
-                                            <option value="Holding" {% if item.latest_status.status == 'Holding' %}selected{% endif %}>Holding</option>
-                                            <option value="Shipping" {% if item.latest_status.status == 'Shipping' %}selected{% endif %}>Shipping</option>
-                                            <option value="Completed" {% if item.latest_status.status == 'Completed' %}selected{% endif %}>Completed</option>
-                                            <option value="Cancelled" {% if item.latest_status.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
-                                        </select>
-                                        <button type="submit" class="btn btn-small btn-primary">Update</button>
-                                    </form>
-                                    <p style="color: #999; font-size: 0.75rem; margin-top: 0.25rem;">
-                                        Current: <strong style="color: {% if item.latest_status.status == 'Completed' %}var(--success-color){% elif item.latest_status.status == 'Cancelled' %}var(--error-color){% elif item.latest_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %};">{{ item.latest_status.status }}</strong>
-                                    </p>
+                                    <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                        <strong style="font-size: 0.82rem; white-space: nowrap; color: {% if item.latest_status.status == 'Completed' %}var(--success-color){% elif item.latest_status.status == 'Cancelled' %}var(--error-color){% elif item.latest_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %};">{{ item.latest_status.status }}</strong>
+                                        <span style="color: #999; font-size: 0.75rem;">→</span>
+                                        <form class="status-form" data-item-id="{{ item.orderItemID }}" style="display: flex; gap: 0.4rem; align-items: center; flex: 1;">
+                                            {% csrf_token %}
+                                            <select name="status" class="status-select" style="flex: 1; min-width: 90px; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 5px; font-size: 0.85rem;">
+                                                <option value="Processing" {% if item.latest_status.status == 'Processing' %}selected{% endif %}>Processing</option>
+                                                <option value="Holding" {% if item.latest_status.status == 'Holding' %}selected{% endif %}>Holding</option>
+                                                <option value="Shipping" {% if item.latest_status.status == 'Shipping' %}selected{% endif %}>Shipping</option>
+                                                <option value="Completed" {% if item.latest_status.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                                <option value="Cancelled" {% if item.latest_status.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-small btn-primary">Update</button>
+                                        </form>
+                                    </div>
                                 {% else %}
                                     <div style="padding: 0.5rem; background-color: #fee; border: 1px solid var(--error-color); border-radius: 5px; text-align: center;">
                                         <strong style="color: var(--error-color); font-size: 0.9rem;">CANCELLED BY CUSTOMER</strong>
@@ -77,6 +78,23 @@
                                 {% endif %}
                             </div>
                         </div>
+
+                        {% if item.pending_refund %}
+                            <div style="padding: 1.25rem; margin-bottom: 0.75rem; border: 1.5px solid #d0d0d0; border-radius: 6px; background-color: #fffdf0;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                                    <div style="flex: 1;">
+                                        <h4 style="color: #1a1a1a; margin: 0 0 0.5rem 0; font-size: 0.9rem; font-weight: 600;">Pending Refund Request</h4>
+                                        <p style="margin: 0.2rem 0; color: #666; font-size: 0.85rem;"><strong>Submitted:</strong> {{ item.pending_refund.requestDate|date:"M d, Y H:i" }}</p>
+                                        <p style="margin: 0.5rem 0 0 0; color: #444; font-size: 0.9rem;"><strong>Customer Reason:</strong><br><span style="color: #666;">{{ item.pending_refund.reason }}</span></p>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                                        <button onclick="respondToRefund({{ item.pending_refund.refundRequestID }}, 'approve')" class="btn btn-small" style="background-color: #fff; color: #1a1a1a; border: 1.5px solid #1a1a1a;">Approve</button>
+                                        <button onclick="respondToRefund({{ item.pending_refund.refundRequestID }}, 'reject')" class="btn btn-small" style="background-color: #fff; color: #1a1a1a; border: 1.5px solid #1a1a1a;">Reject</button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
                     {% endfor %}
                 </div>
             </div>
@@ -124,5 +142,38 @@ document.querySelectorAll('.status-form').forEach(form => {
         });
     });
 });
+
+function respondToRefund(refundRequestId, action) {
+    const msg = action === 'approve'
+        ? 'Approve this refund? The item will be cancelled and stock restored.'
+        : 'Reject this refund request?';
+    if (!confirm(msg)) return;
+
+    let vendorNote = '';
+    if (action === 'reject') {
+        vendorNote = prompt('Optional: Add a note explaining why the refund was rejected:') || '';
+    }
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    const formData = new FormData();
+    formData.append('action', action);
+    formData.append('vendor_note', vendorNote);
+
+    fetch(`/vendor/refund-request/${refundRequestId}/respond/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error || 'Error responding to refund request');
+        }
+    })
+    .catch(() => alert('Error responding to refund request'));
+}
 </script>
 {% endblock %}

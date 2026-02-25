@@ -62,6 +62,12 @@
                     <td>
                         {% if order_item.can_cancel %}
                             <button onclick="cancelItem({{ order_item.orderItemID }})" class="btn btn-small" style="background-color: var(--error-color); color: white;">Cancel</button>
+                        {% elif order_item.can_request_refund %}
+                            {% if order_item.has_pending_refund %}
+                                <span style="color: var(--warning-color); font-size: 0.85rem; font-weight: 600;">Refund Pending</span>
+                            {% else %}
+                                <button onclick="openRefundModal({{ order_item.orderItemID }})" class="btn btn-small" style="background-color: var(--accent-color); color: white;">Request Refund</button>
+                            {% endif %}
                         {% else %}
                             <span style="color: #999; font-size: 0.85rem;">—</span>
                         {% endif %}
@@ -92,7 +98,65 @@
     </div>
 </div>
 
+<!-- Refund Request Modal -->
+<div id="refundModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="container" style="width: 90%; max-width: 420px; margin: 0;">
+        <h3 style="margin-bottom: 1rem;">Request a Refund</h3>
+        <div class="form-group">
+            <label for="refundReason">Reason for refund:</label>
+            <select id="refundReason" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; background: var(--card-bg); color: var(--text-color);">
+                <option value="Item arrived damaged">Item arrived damaged</option>
+                <option value="Wrong item sent">Wrong item sent</option>
+                <option value="Item not as described">Item not as described</option>
+                <option value="Item never arrived">Item never arrived</option>
+                <option value="Quality issues">Quality issues</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button onclick="submitRefund()" class="btn btn-primary btn-block">Submit Request</button>
+            <button onclick="closeRefundModal()" class="btn btn-secondary btn-block">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
+let _refundItemId = null;
+
+function openRefundModal(orderItemId) {
+    _refundItemId = orderItemId;
+    document.getElementById('refundModal').style.display = 'flex';
+}
+
+function closeRefundModal() {
+    document.getElementById('refundModal').style.display = 'none';
+    _refundItemId = null;
+}
+
+function submitRefund() {
+    const reason = document.getElementById('refundReason').value;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    const formData = new FormData();
+    formData.append('reason', reason);
+
+    fetch(`/orders/item/${_refundItemId}/refund-request/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            closeRefundModal();
+            location.reload();
+        } else {
+            alert(data.error || 'Error submitting refund request');
+        }
+    })
+    .catch(() => alert('Error submitting refund request'));
+}
+
 function cancelItem(orderItemId) {
     if (!confirm('Are you sure you want to cancel this item? This action cannot be undone.')) {
         return;

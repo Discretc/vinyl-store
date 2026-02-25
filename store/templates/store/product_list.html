@@ -49,20 +49,17 @@
                 {% endif %}
                 <div class="product-info">
                     <h3 class="product-name">{{ product.productName }}</h3>
-                    <a href="{% url 'shop_detail' product.storeID.storeID %}" style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-decoration: none;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='#666'">{{ product.storeID.storeName }}</a>
+                    <a href="{% url 'shop_detail' product.storeID.storeID %}" style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-decoration: none;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#666'">{{ product.storeID.storeName }}</a>
                     
                     <div style="min-height: 2rem; margin-bottom: 0.5rem;">
-                        {% with promo=product.promotions.all|first %}
-                            {% if promo.is_active %}
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <p class="product-price" style="margin: 0;">${{ product.price|floatformat:2 }}</p>
-                                    <p class="product-price discounted" style="margin: 0; color: #999; text-decoration: line-through; font-size: 0.9rem;">${{ product.original_price|floatformat:2 }}</p>
-                                    <span class="product-discount">-{{ promo.discountRate }}%</span>
-                                </div>
-                            {% else %}
-                                <p class="product-price" style="margin: 0;">${{ product.price|floatformat:2 }}</p>
-                            {% endif %}
-                        {% endwith %}
+                        {% if product.has_discount %}
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <p class="product-price" style="margin: 0;">${{ product.discounted_price|floatformat:2 }}</p>
+                                <p class="product-price" style="margin: 0; color: #999; text-decoration: line-through; font-size: 0.9rem;">${{ product.price|floatformat:2 }}</p>
+                            </div>
+                        {% else %}
+                            <p class="product-price" style="margin: 0;">${{ product.price|floatformat:2 }}</p>
+                        {% endif %}
                     </div>
 
                     <div style="min-height: 1.5rem; margin-bottom: 0.5rem;">

@@ -11,7 +11,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="{% url 'home' %}" class="nav-logo">💽 VinylTage</a>
+            <a href="{% url 'home' %}" class="nav-logo"><span class="logo-emoji">💽</span> VinylTage</a>
             <ul class="nav-menu">
                 <li><a href="{% url 'product_list' %}" class="nav-link">Browse</a></li>
                 {% if request.session.user_type == 'customer' %}
@@ -52,9 +52,21 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2026 Vinyl Store. A university capstone project.</p>
-            <p>Built with Django and PostgreSQLMtyy Great Projectork Studio</p>
+        <div class="footer-inner">
+            <a href="{% url 'home' %}" class="footer-logo"><span class="logo-emoji">💽</span> Vinyltage</a>
+            <p class="footer-tagline">Your Vintage Vinyl Destination</p>
+            <nav class="footer-nav">
+                <a href="{% url 'product_list' %}" class="footer-nav-link">Browse</a>
+                <a href="{% url 'home' %}" class="footer-nav-link">Home</a>
+                {% if request.session.user_type == 'customer' %}
+                    <a href="{% url 'view_wishlist' %}" class="footer-nav-link">Wishlist</a>
+                    <a href="{% url 'order_history' %}" class="footer-nav-link">Orders</a>
+                {% elif request.session.user_type == 'vendor' %}
+                    <a href="{% url 'vendor_dashboard' %}" class="footer-nav-link">Dashboard</a>
+                    <a href="{% url 'vendor_orders' %}" class="footer-nav-link">Manage Orders</a>
+                {% endif %}
+            </nav>
+            <p class="footer-copy">&copy; Vinyltage Work Studio</p>
         </div>
     </footer>
 

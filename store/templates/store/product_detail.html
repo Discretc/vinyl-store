@@ -26,7 +26,7 @@
     <!-- Product Info -->
     <div class="product-detail-info">
         <h1>{{ product.productName }}</h1>
-        <p style="color: #666; font-size: 1.1rem; margin-bottom: 1rem;">By: <a href="{% url 'shop_detail' product.storeID.storeID %}" style="color: inherit; text-decoration: none; font-weight: 600;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='inherit'">{{ product.storeID.storeName }}</a></p>
+        <p style="color: #666; font-size: 1.1rem; margin-bottom: 1rem;">By: <a href="{% url 'shop_detail' product.storeID.storeID %}" style="color: inherit; text-decoration: none; font-weight: 600;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='inherit'">{{ product.storeID.storeName }}</a></p>
 
         <!-- Price Section -->
         {% if active_promo %}
