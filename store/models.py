@@ -342,3 +342,30 @@ class ClickHistory(models.Model):
 
     def __str__(self):
         return f"{self.customerID} viewed {self.productID} on {self.viewedDate}"
+
+
+# ======================= REFUND REQUEST MODEL =======================
+class RefundRequest(models.Model):
+    """
+    Stores refund requests submitted by customers for shipped/completed orders.
+    Vendors can approve or reject the request.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    refundRequestID = models.AutoField(primary_key=True)
+    orderItemID = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='refund_requests')
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    requestDate = models.DateTimeField(auto_now_add=True)
+    responseDate = models.DateTimeField(null=True, blank=True)
+    vendorNote = models.TextField(blank=True)
+
+    class Meta:
+        db_table = 'refund_request'
+
+    def __str__(self):
+        return f"Refund Request #{self.refundRequestID} - {self.status}"

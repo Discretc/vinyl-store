@@ -63,22 +63,31 @@
                     <th>Product Name</th>
                     <th>Price</th>
                     <th>Stock</th>
+                    <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for product in products %}
-                    <tr>
+                    <tr style="{% if not product.availability %}opacity: 0.6;{% endif %}">
                         <td>
                             <a href="{% url 'product_detail' product.productID %}">{{ product.productName }}</a>
                         </td>
                         <td>${{ product.price|floatformat:2 }}</td>
                         <td>{{ product.stockQuantity }}</td>
+                        <td>
+                            <span style="padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem; font-weight: bold; background-color: {% if product.availability %}var(--success-color){% else %}var(--error-color){% endif %}; color: white;">
+                                {% if product.availability %}Active{% else %}Hidden{% endif %}
+                            </span>
+                        </td>
                         <td>{{ product.createdTime|date:"M d, Y" }}</td>
                         <td>
-                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; flex-wrap: wrap;">
                                 <a href="{% url 'edit_product' product.productID %}" class="btn btn-small btn-primary">Edit</a>
+                                <button onclick="toggleAvailability({{ product.productID }}, {{ product.availability|lower }})" class="btn btn-small" style="background-color: {% if product.availability %}var(--warning-color){% else %}var(--success-color){% endif %}; color: white;">
+                                    {% if product.availability %}Disable{% else %}Enable{% endif %}
+                                </button>
                                 <button onclick="openImageUpload({{ product.productID }})" class="btn btn-small btn-secondary">Images</button>
                             </div>
                         </td>
@@ -125,6 +134,34 @@ function openImageUpload(productId) {
 function closeImageUpload() {
     document.getElementById('imageModal').style.display = 'none';
     document.getElementById('image-form').reset();
+}
+
+function toggleAvailability(productId, currentStatus) {
+    const action = currentStatus ? 'disable' : 'enable';
+    if (!confirm(`Are you sure you want to ${action} this product?`)) {
+        return;
+    }
+    
+    fetch(`/vendor/product/${productId}/toggle-availability/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error toggling product availability');
+        console.error(error);
+    });
 }
 
 document.getElementById('add-product-form').addEventListener('submit', function(e) {

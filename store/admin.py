@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
-    OrderStatus, CancelledItem, WishlistItem, Promotion, Review, ClickHistory
+    OrderStatus, CancelledItem, WishlistItem, Promotion, Review, ClickHistory, RefundRequest
 )
 
 
@@ -142,3 +142,12 @@ class ClickHistoryAdmin(admin.ModelAdmin):
     search_fields = ('customerID__email', 'productID__productName')
     list_filter = ('viewedDate',)
     readonly_fields = ('viewedDate',)
+
+
+# ======================= REFUND REQUEST ADMIN =======================
+@admin.register(RefundRequest)
+class RefundRequestAdmin(admin.ModelAdmin):
+    list_display = ('refundRequestID', 'orderItemID', 'status', 'requestDate', 'responseDate')
+    search_fields = ('orderItemID__orderID__orderID', 'orderItemID__productID__productName')
+    list_filter = ('status', 'requestDate', 'responseDate')
+    readonly_fields = ('requestDate', 'responseDate')

@@ -38,6 +38,7 @@
                 <th>Quantity</th>
                 <th>Subtotal</th>
                 <th>Status</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -57,6 +58,19 @@
                                 {{ latest_status.status }}
                             </span>
                         {% endwith %}
+                    </td>
+                    <td>
+                        {% if order_item.can_cancel %}
+                            <button onclick="cancelItem({{ order_item.orderItemID }})" class="btn btn-small" style="background-color: var(--error-color); color: white;">Cancel</button>
+                        {% elif order_item.can_request_refund %}
+                            {% if order_item.has_pending_refund %}
+                                <span style="color: var(--accent-color); font-size: 0.85rem;">Refund Pending</span>
+                            {% else %}
+                                <button onclick="requestRefund({{ order_item.orderItemID }})" class="btn btn-small" style="background-color: var(--accent-color); color: white;">Request Refund</button>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: #999; font-size: 0.85rem;">—</span>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}
@@ -83,4 +97,68 @@
         <a href="{% url 'product_list' %}" class="btn btn-secondary">Continue Shopping</a>
     </div>
 </div>
+
+<script>
+function cancelItem(orderItemId) {
+    if (!confirm('Are you sure you want to cancel this item? This action cannot be undone.')) {
+        return;
+    }
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    
+    fetch(`/orders/item/${orderItemId}/cancel/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error || 'Error cancelling item');
+        }
+    })
+    .catch(error => {
+        alert('Error cancelling item');
+        console.error(error);
+    });
+}
+
+function requestRefund(orderItemId) {
+    const reason = prompt('Please describe your issue:');
+    if (!reason || reason.trim() === '') {
+        return;
+    }
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    
+    const formData = new FormData();
+    formData.append('reason', reason.trim());
+    
+    fetch(`/orders/item/${orderItemId}/refund-request/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error || 'Error submitting refund request');
+        }
+    })
+    .catch(error => {
+        alert('Error submitting refund request');
+        console.error(error);
+    });
+}
+</script>
 {% endblock %}

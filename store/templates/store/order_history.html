@@ -3,7 +3,20 @@
 {% block title %}Order History - Vinyl Store{% endblock %}
 
 {% block content %}
-<h2 class="page-title">My Orders</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h2 class="page-title" style="margin: 0;">My Orders</h2>
+    
+    <!-- Status Filter -->
+    <form method="GET">
+        <select name="status" id="status-filter" onchange="this.form.submit()" 
+                style="padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 5px; font-size: 0.9rem;">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
 
 {% if orders %}
     <div class="container">
@@ -37,9 +50,15 @@
 {% else %}
     <div class="empty-state">
         <div class="empty-state-icon">📦</div>
-        <div class="empty-state-message">You haven't placed any orders yet</div>
-        <p>Start shopping and place your first order!</p>
-        <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+        {% if current_status %}
+            <div class="empty-state-message">No orders found with status: {{ current_status }}</div>
+            <p>Try selecting a different status or view all orders.</p>
+            <a href="{% url 'order_history' %}" class="btn btn-primary" style="margin-top: 1rem;">View All Orders</a>
+        {% else %}
+            <div class="empty-state-message">You haven't placed any orders yet</div>
+            <p>Start shopping and place your first order!</p>
+            <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+        {% endif %}
     </div>
 {% endif %}
 {% endblock %}

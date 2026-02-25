@@ -51,25 +51,29 @@
                     <h3 class="product-name">{{ product.productName }}</h3>
                     <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">{{ product.storeID.storeName }}</p>
                     
-                    {% with promo=product.promotions.all|first %}
-                        {% if promo.is_active %}
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="min-height: 2rem; margin-bottom: 0.5rem;">
+                        {% with promo=product.promotions.all|first %}
+                            {% if promo.is_active %}
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <p class="product-price" style="margin: 0;">${{ product.price|floatformat:2 }}</p>
+                                    <p class="product-price discounted" style="margin: 0; color: #999; text-decoration: line-through; font-size: 0.9rem;">${{ product.original_price|floatformat:2 }}</p>
+                                    <span class="product-discount">-{{ promo.discountRate }}%</span>
+                                </div>
+                            {% else %}
                                 <p class="product-price" style="margin: 0;">${{ product.price|floatformat:2 }}</p>
-                                <p class="product-price discounted" style="margin: 0; color: #999; text-decoration: line-through; font-size: 0.9rem;">${{ product.original_price|floatformat:2 }}</p>
-                                <span class="product-discount">-{{ promo.discountRate }}%</span>
-                            </div>
-                        {% else %}
-                            <p class="product-price">${{ product.price|floatformat:2 }}</p>
-                        {% endif %}
-                    {% endwith %}
+                            {% endif %}
+                        {% endwith %}
+                    </div>
 
-                    {% with review_count=product.reviews.count %}
-                        {% if review_count > 0 %}
-                            <p class="product-rating"> {{ product.avg_rating|floatformat:1 }} stars ({{ review_count }} reviews)</p>
-                        {% endif %}
-                    {% endwith %}
+                    <div style="min-height: 1.5rem; margin-bottom: 0.5rem;">
+                        {% with review_count=product.reviews.count %}
+                            {% if review_count > 0 %}
+                                <p class="product-rating" style="margin: 0;"> {{ product.avg_rating|floatformat:1 }} stars ({{ review_count }} reviews)</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
 
-                    <p class="product-stock {% if product.stockQuantity == 0 %}out{% elif product.stockQuantity < 5 %}low{% endif %}">
+                    <p class="product-stock {% if product.stockQuantity == 0 %}out{% elif product.stockQuantity < 5 %}low{% endif %}" style="margin-bottom: 1rem;">
                         {% if product.stockQuantity > 0 %}
                             {{ product.stockQuantity }} in stock
                         {% else %}
