@@ -1,0 +1,116 @@
+{% extends 'store/base.html' %}
+
+{% block title %}{{ store.storeName }} - Vinyltage{% endblock %}
+
+{% block content %}
+
+<!-- Shop Header -->
+<div class="container" style="margin-bottom: 2rem; padding: 2rem;">
+    <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+        <!-- Profile Image / Initial Avatar -->
+        {% if store.vendorID.profileImage %}
+            <img src="{{ store.vendorID.profileImage.url }}" alt="{{ store.storeName }}"
+                 style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color); flex-shrink: 0;">
+        {% else %}
+            <div style="width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, #c0392b, #1a1a1a); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; color: white; flex-shrink: 0; letter-spacing: -1px;">
+                {{ store.storeName|first|upper }}
+            </div>
+        {% endif %}
+
+        <div style="min-width: 0; flex: 1;">
+            <h1 style="font-size: 1.8rem; font-weight: 900; margin: 0 0 0.4rem; letter-spacing: 0.02em;">{{ store.storeName }}</h1>
+            {% if store.description %}
+                <p style="color: #666; font-size: 0.95rem; margin: 0 0 0.5rem; line-height: 1.5;">{{ store.description }}</p>
+            {% endif %}
+            <p style="color: #999; font-size: 0.82rem; margin: 0;">
+                <span>{{ product_count }} product{{ product_count|pluralize }}</span>
+                &nbsp;·&nbsp;
+                <span>Since {{ store.createdTime|date:"M Y" }}</span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Shop Photo Gallery -->
+{% if shop_photos %}
+<div style="margin-bottom: 2rem; overflow-x: auto; white-space: nowrap; padding: 0 1rem;">
+    <div style="display: inline-flex; gap: 1rem; padding-bottom: 0.5rem;">
+        {% for photo in shop_photos %}
+            <div style="display: inline-block; width: 220px; vertical-align: top; white-space: normal; flex-shrink: 0;">
+                <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:store.storeName }}"
+                     style="width: 220px; height: 150px; object-fit: cover; border-radius: 10px; display: block;">
+                {% if photo.caption %}
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 0.3rem; text-align: center;">{{ photo.caption }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Search Bar -->
+<form method="get" action="" style="margin-bottom: 2rem; max-width: 500px; margin-left: auto; margin-right: auto; display: flex; gap: 0.5rem;">
+    <input type="text" name="search" value="{{ search_query }}" placeholder="Search this shop…"
+           style="flex: 1; padding: 0.65rem 1rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background: var(--card-bg); color: var(--text-color);">
+    <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.2rem;">Search</button>
+    {% if search_query %}
+        <a href="{% url 'shop_detail' store.storeID %}" class="btn btn-secondary" style="padding: 0.65rem 1rem;">Clear</a>
+    {% endif %}
+</form>
+
+{% if search_query %}
+    <p style="text-align: center; color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;">
+        {{ product_count }} result{{ product_count|pluralize }} for "<strong>{{ search_query }}</strong>"
+    </p>
+{% endif %}
+
+<!-- Product Grid -->
+{% if products %}
+    <div class="product-grid">
+        {% for product in products %}
+            <div class="product-card">
+                <a href="{% url 'product_detail' product.productID %}" style="text-decoration: none; color: inherit;">
+                    {% with primary_media=product.media.all|dictsortreversed:"isPrimary" %}
+                        {% if primary_media %}
+                            <img src="{{ primary_media.0.mediaURL.url }}" alt="{{ product.productName }}"
+                                 style="width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        {% else %}
+                            <div style="width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, #1a1a1a, #c0392b); border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-size: 3rem;"><span>💿</span></div>
+                        {% endif %}
+                    {% endwith %}
+                    <div style="padding: 1rem;">
+                        <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; line-height: 1.3;">{{ product.productName }}</h3>
+                        <div style="margin-bottom: 0.3rem;">
+                            {% if product.has_discount %}
+                                <span style="font-size: 1rem; font-weight: 700; color: var(--primary-color);">${{ product.discounted_price|floatformat:2 }}</span>
+                                <span style="font-size: 0.82rem; color: #999; text-decoration: line-through; margin-left: 0.4rem;">${{ product.price|floatformat:2 }}</span>
+                            {% else %}
+                                <span style="font-size: 1rem; font-weight: 700;">${{ product.price|floatformat:2 }}</span>
+                            {% endif %}
+                        </div>
+                        {% if product.avg_rating %}
+                            <p style="font-size: 0.8rem; color: #999; margin: 0;">★ {{ product.avg_rating|floatformat:1 }}</p>
+                        {% endif %}
+                    </div>
+                </a>
+                <div style="padding: 0 1rem 1rem;">
+                    <form method="post" action="{% url 'add_to_cart' product.productID %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-block" style="font-size: 0.85rem;">Add to Cart</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div style="text-align: center; padding: 4rem 1rem; color: #999;">
+        {% if search_query %}
+            <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">No products match your search.</p>
+            <a href="{% url 'shop_detail' store.storeID %}" style="color: var(--primary-color);">View all products</a>
+        {% else %}
+            <p style="font-size: 1.2rem;">This shop has no products yet.</p>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% endblock %}

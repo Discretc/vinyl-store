@@ -27,7 +27,6 @@ urlpatterns = [
     path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
     path('orders/', views.order_history, name='order_history'),
     path('orders/item/<int:order_item_id>/cancel/', views.cancel_order_item, name='cancel_order_item'),
-    path('orders/item/<int:order_item_id>/refund-request/', views.submit_refund_request, name='submit_refund_request'),
 
     # Reviews
     path('products/<int:product_id>/review/', views.add_review, name='add_review'),
@@ -52,5 +51,10 @@ urlpatterns = [
     path('vendor/promotion/<int:promotion_id>/toggle-status/', views.toggle_promotion_status, name='toggle_promotion_status'),
     path('vendor/orders/', views.vendor_orders, name='vendor_orders'),
     path('vendor/order-item/<int:order_item_id>/update-status/', views.update_order_status, name='update_order_status'),
-    path('vendor/refund-request/<int:refund_request_id>/respond/', views.respond_to_refund_request, name='respond_to_refund_request'),
+
+    # Shop Pages
+    path('shops/<int:store_id>/', views.shop_detail, name='shop_detail'),
+    path('vendor/upload-profile/', views.upload_vendor_profile, name='upload_vendor_profile'),
+    path('vendor/shop/upload-photo/', views.upload_store_photo, name='upload_store_photo'),
+    path('vendor/shop/photo/<int:photo_id>/delete/', views.delete_store_photo, name='delete_store_photo'),
 ]

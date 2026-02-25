@@ -62,12 +62,6 @@
                     <td>
                         {% if order_item.can_cancel %}
                             <button onclick="cancelItem({{ order_item.orderItemID }})" class="btn btn-small" style="background-color: var(--error-color); color: white;">Cancel</button>
-                        {% elif order_item.can_request_refund %}
-                            {% if order_item.has_pending_refund %}
-                                <span style="color: var(--accent-color); font-size: 0.85rem;">Refund Pending</span>
-                            {% else %}
-                                <button onclick="requestRefund({{ order_item.orderItemID }})" class="btn btn-small" style="background-color: var(--accent-color); color: white;">Request Refund</button>
-                            {% endif %}
                         {% else %}
                             <span style="color: #999; font-size: 0.85rem;">—</span>
                         {% endif %}
@@ -124,39 +118,6 @@ function cancelItem(orderItemId) {
     })
     .catch(error => {
         alert('Error cancelling item');
-        console.error(error);
-    });
-}
-
-function requestRefund(orderItemId) {
-    const reason = prompt('Please describe your issue:');
-    if (!reason || reason.trim() === '') {
-        return;
-    }
-    
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
-    
-    const formData = new FormData();
-    formData.append('reason', reason.trim());
-    
-    fetch(`/orders/item/${orderItemId}/refund-request/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert(data.error || 'Error submitting refund request');
-        }
-    })
-    .catch(error => {
-        alert('Error submitting refund request');
         console.error(error);
     });
 }

@@ -14,9 +14,29 @@
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; max-width: 100%;">
     <div class="container" style="margin: 0;">
         <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Store Information</h3>
-        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;"><strong>{{ store.storeName }}</strong></p>
-        <p style="color: #666; font-size: 0.95rem; margin-bottom: 0.75rem;">{{ store.description }}</p>
-        <p style="color: #999; font-size: 0.85rem;">Created: {{ store.createdTime|date:"M d, Y" }}</p>
+        <div style="display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <!-- Profile Picture -->
+            <div style="position: relative; flex-shrink: 0;">
+                {% if vendor.profileImage %}
+                    <img id="profilePreview" src="{{ vendor.profileImage.url }}" alt="Profile"
+                         style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color);">
+                {% else %}
+                    <div id="profilePreview" style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #c0392b, #1a1a1a); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 900; color: white;">
+                        {{ store.storeName|first|upper }}
+                    </div>
+                {% endif %}
+            </div>
+            <div style="min-width: 0;">
+                <p style="font-size: 1.05rem; margin-bottom: 0.25rem;"><strong>{{ store.storeName }}</strong></p>
+                <p style="color: #666; font-size: 0.88rem; margin-bottom: 0.4rem;">{{ store.description }}</p>
+                <p style="color: #999; font-size: 0.8rem; margin-bottom: 0.5rem;">Created: {{ store.createdTime|date:"M d, Y" }}</p>
+                <label class="btn btn-secondary btn-small" style="cursor: pointer; font-size: 0.8rem; padding: 0.3rem 0.7rem;">
+                    Change Photo
+                    <input type="file" id="profileImageInput" accept="image/*" style="display:none;" onchange="uploadProfileImage(this)">
+                </label>
+                <a href="{% url 'shop_detail' store.storeID %}" class="btn btn-secondary btn-small" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">View My Shop →</a>
+            </div>
+        </div>
     </div>
 
     <div class="container" style="margin: 0;">
@@ -24,6 +44,47 @@
         <p style="font-size: 1rem; margin-bottom: 0.5rem;"><strong>{{ total_products }}</strong> products</p>
         <p style="color: #000; font-weight: bold; font-size: 1.4rem; margin-top: 0.75rem;">Total Sales: ${{ total_sales|floatformat:2 }}</p>
     </div>
+</div>
+
+<!-- Shop Photos Section -->
+<div class="container" style="margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Shop Photos</h3>
+    <p style="color: #666; font-size: 0.88rem; margin-bottom: 1rem;">Upload photos shown on your public shop page (up to 10 recommended).</p>
+
+    <!-- Existing Photos -->
+    {% if shop_photos %}
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+            {% for photo in shop_photos %}
+                <div style="position: relative; width: 130px;">
+                    <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:'Shop photo' }}"
+                         style="width: 130px; height: 90px; object-fit: cover; border-radius: 8px; display: block;">
+                    {% if photo.caption %}
+                        <p style="font-size: 0.75rem; color: #666; margin-top: 0.2rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ photo.caption }}</p>
+                    {% endif %}
+                    <button onclick="deleteShopPhoto({{ photo.storeMediaID }}, this)"
+                            style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; line-height: 1;">✕</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: #999; font-size: 0.85rem; margin-bottom: 1rem;">No shop photos yet.</p>
+    {% endif %}
+
+    <!-- Upload New Photo -->
+    <form id="shop-photo-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="margin: 0; flex: 1; min-width: 160px;">
+                <label for="shopPhotoFile" style="font-size: 0.85rem;">Photo:</label>
+                <input type="file" id="shopPhotoFile" name="photo" accept="image/*" required>
+            </div>
+            <div class="form-group" style="margin: 0; flex: 2; min-width: 160px;">
+                <label for="shopPhotoCaption" style="font-size: 0.85rem;">Caption (optional):</label>
+                <input type="text" id="shopPhotoCaption" name="caption" placeholder="e.g. Our vinyl wall">
+            </div>
+            <button type="submit" class="btn btn-primary btn-small" style="white-space: nowrap;">Upload Photo</button>
+        </div>
+    </form>
 </div>
 
 <!-- Add Product Section -->
@@ -83,21 +144,14 @@
                         </td>
                         <td>{{ product.createdTime|date:"M d, Y" }}</td>
                         <td>
-                            <div style="display: flex; gap: 0.5rem; align-items: stretch; flex-wrap: wrap;">
-                                {% with btn_style="background-color: #f5f5f5; color: #1a1a1a; border: 1px solid #d0d0d0; padding: 0 0.75rem; height: 34px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; border-radius: 4px; white-space: nowrap;" %}
-                                <a href="{% url 'edit_product' product.productID %}" class="btn btn-small" style="{{ btn_style }}">Edit</a>
-                                <button onclick="openImageUpload({{ product.productID }})" class="btn btn-small" style="{{ btn_style }}">Images</button>
-                                <button onclick="toggleAvailability({{ product.productID }}, {{ product.availability|lower }})" class="btn btn-small" style="{{ btn_style }} width: 34px; padding: 0;" title="{% if product.availability %}Hide product{% else %}Show product{% endif %}">{% endwith %}
+                            <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                                <a href="{% url 'edit_product' product.productID %}" class="btn btn-small btn-primary" style="display: flex; align-items: center;">Edit</a>
+                                <button onclick="openImageUpload({{ product.productID }})" class="btn btn-small btn-secondary" style="display: flex; align-items: center;">Images</button>
+                                <button onclick="toggleAvailability({{ product.productID }}, {{ product.availability|lower }})" class="btn btn-small" title="{% if product.availability %}Disable{% else %}Enable{% endif %}" style="background-color: {% if product.availability %}var(--warning-color){% else %}var(--success-color){% endif %}; color: white; display: flex; align-items: center; justify-content: center; width: 34px; padding: 0; flex-shrink: 0;">
                                     {% if product.availability %}
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                                            <line x1="1" y1="1" x2="23" y2="23"></line>
-                                        </svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                                     {% else %}
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     {% endif %}
                                 </button>
                             </div>
@@ -137,6 +191,71 @@
 </div>
 
 <script>
+function uploadProfileImage(input) {
+    if (!input.files[0]) return;
+    const formData = new FormData();
+    formData.append('profile_image', input.files[0]);
+    fetch('{% url "upload_vendor_profile" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const preview = document.getElementById('profilePreview');
+            if (preview.tagName === 'IMG') {
+                preview.src = data.url + '?t=' + Date.now();
+            } else {
+                const img = document.createElement('img');
+                img.id = 'profilePreview';
+                img.src = data.url;
+                img.style = preview.style.cssText;
+                img.style.borderRadius = '50%';
+                img.style.objectFit = 'cover';
+                img.style.border = '2px solid var(--primary-color)';
+                preview.parentNode.replaceChild(img, preview);
+            }
+        } else {
+            alert('Error uploading profile image: ' + (data.error || 'Unknown error'));
+        }
+    });
+}
+
+document.getElementById('shop-photo-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('{% url "upload_store_photo" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error uploading photo: ' + (data.error || 'Unknown error'));
+        }
+    });
+});
+
+function deleteShopPhoto(photoId, btn) {
+    if (!confirm('Delete this photo?')) return;
+    fetch(`/vendor/shop/photo/${photoId}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            btn.closest('div[style]').remove();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    });
+}
+
 function openImageUpload(productId) {
     document.getElementById('imageProductId').value = productId;
     document.getElementById('imageModal').style.display = 'flex';

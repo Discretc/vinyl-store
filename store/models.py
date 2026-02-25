@@ -84,6 +84,26 @@ class Store(models.Model):
         return self.storeName
 
 
+# ======================= STORE MEDIA MODEL =======================
+class StoreMedia(models.Model):
+    """
+    Stores multiple photos for a vendor's shop page.
+    Vendors can upload shop/banner images visible to customers.
+    """
+    storeMediaID = models.AutoField(primary_key=True)
+    storeID = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='shop_photos')
+    image = models.ImageField(upload_to='store_photos/')
+    caption = models.CharField(max_length=200, blank=True)
+    uploadedTime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'store_media'
+        ordering = ['uploadedTime']
+
+    def __str__(self):
+        return f"{self.storeID.storeName} photo #{self.storeMediaID}"
+
+
 # ======================= PRODUCT MODEL =======================
 class Product(models.Model):
     """

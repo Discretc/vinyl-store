@@ -9,7 +9,7 @@ import json
 
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
-    OrderStatus, Review, WishlistItem, Promotion, ClickHistory, CancelledItem, RefundRequest
+    OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia
 )
 
 
@@ -221,6 +221,46 @@ def product_list(request):
         'search_query': search_query,
     }
     return render(request, 'store/product_list.html', context)
+
+
+def shop_detail(request, store_id):
+    """Public shop page — store info, gallery, and searchable product listing."""
+    store = get_object_or_404(Store, storeID=store_id)
+    search_query = request.GET.get('search', '').strip()
+
+    products = Product.objects.filter(
+        storeID=store, availability=True
+    ).prefetch_related('promotions', 'media').annotate(
+        avg_rating=Avg('reviews__rating')
+    )
+
+    if search_query:
+        products = products.filter(
+            Q(productName__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    for product in products:
+        promo = product.promotions.filter(status='active').first()
+        if promo and promo.is_active():
+            product.discounted_price = product.price - promo.get_discount_amount(product.price)
+            product.has_discount = True
+            product.active_promo = promo
+        else:
+            product.discounted_price = product.price
+            product.has_discount = False
+            product.active_promo = None
+
+    shop_photos = store.shop_photos.all()
+
+    context = {
+        'store': store,
+        'products': products,
+        'shop_photos': shop_photos,
+        'search_query': search_query,
+        'product_count': products.count(),
+    }
+    return render(request, 'store/shop.html', context)
 
 
 def product_detail(request, product_id):
@@ -519,13 +559,6 @@ def order_detail(request, order_id):
             latest_status = item.statuses.last()
             # Item can be cancelled if status is Processing or Holding (not Shipping, Completed, or Cancelled)
             item.can_cancel = latest_status and latest_status.status in ['Processing', 'Holding']
-            # Item can request refund if status is Shipping or Completed
-            item.can_request_refund = latest_status and latest_status.status in ['Shipping', 'Completed']
-            # Check if there's a pending refund request
-            item.has_pending_refund = RefundRequest.objects.filter(
-                orderItemID=item,
-                status='pending'
-            ).exists()
 
         context = {
             'order': order,
@@ -628,126 +661,6 @@ def cancel_order_item(request, order_item_id):
         return JsonResponse({'error': str(e)}, status=400)
 
 
-@require_POST
-def submit_refund_request(request, order_item_id):
-    """Submit a refund request for a shipped/completed order item."""
-    if 'customer_id' not in request.session:
-        return JsonResponse({'error': 'Please log in'}, status=401)
-
-    try:
-        customer = Customer.objects.get(customerID=request.session['customer_id'])
-        order_item = get_object_or_404(
-            OrderItem,
-            orderItemID=order_item_id,
-            orderID__customerID=customer
-        )
-        
-        # Check current status
-        latest_status = order_item.statuses.last()
-        if not latest_status:
-            return JsonResponse({'error': 'Order item has no status'}, status=400)
-        
-        # Can only request refund if status is Shipping or Completed
-        if latest_status.status not in ['Shipping', 'Completed']:
-            return JsonResponse({
-                'error': f'Cannot request refund for item with status: {latest_status.status}'
-            }, status=400)
-        
-        # Check if there's already a pending refund request
-        pending_request = RefundRequest.objects.filter(
-            orderItemID=order_item,
-            status='pending'
-        ).first()
-        if pending_request:
-            return JsonResponse({
-                'error': 'A refund request is already pending for this item'
-            }, status=400)
-        
-        # Get reason from request
-        reason = request.POST.get('reason', '').strip()
-        if not reason:
-            return JsonResponse({'error': 'Please provide a reason for the refund'}, status=400)
-        
-        # Create refund request
-        refund_request = RefundRequest.objects.create(
-            orderItemID=order_item,
-            reason=reason
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Refund request submitted successfully'
-        })
-    except Customer.DoesNotExist:
-        return JsonResponse({'error': 'Customer not found'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
-
-
-@require_POST
-def respond_to_refund_request(request, refund_request_id):
-    """Vendor approves or rejects a refund request."""
-    if 'vendor_id' not in request.session:
-        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
-
-    try:
-        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
-        refund_request = get_object_or_404(
-            RefundRequest,
-            refundRequestID=refund_request_id,
-            orderItemID__productID__storeID__vendorID=vendor
-        )
-        
-        # Can only respond to pending requests
-        if refund_request.status != 'pending':
-            return JsonResponse({
-                'error': f'This request has already been {refund_request.status}'
-            }, status=400)
-        
-        # Get response action and note
-        action = request.POST.get('action', '').strip()
-        vendor_note = request.POST.get('vendor_note', '').strip()
-        
-        if action not in ['approve', 'reject']:
-            return JsonResponse({'error': 'Invalid action'}, status=400)
-        
-        # Update refund request
-        refund_request.status = 'approved' if action == 'approve' else 'rejected'
-        refund_request.vendorNote = vendor_note
-        refund_request.responseDate = timezone.now()
-        refund_request.save()
-        
-        # If approved, create cancelled status and restore stock
-        if action == 'approve':
-            order_item = refund_request.orderItemID
-            
-            # Create new Cancelled status
-            cancelled_status = OrderStatus.objects.create(
-                orderItemID=order_item,
-                status='Cancelled'
-            )
-            
-            # Create cancellation record
-            CancelledItem.objects.create(
-                statusID=cancelled_status,
-                cancelledReason='customer_request'
-            )
-            
-            # Restore product stock
-            product = order_item.productID
-            product.stockQuantity += order_item.quantity
-            product.save()
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Refund request {refund_request.status} successfully'
-        })
-    except Vendor.DoesNotExist:
-        return JsonResponse({'error': 'Vendor not found'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
-
-
 # ======================= REVIEW VIEWS =======================
 
 @require_POST
@@ -837,14 +750,12 @@ def toggle_wishlist(request, product_id):
             message = 'Removed from wishlist'
             action = 'removed'
 
-        # Always use messages framework and redirect for consistent notification display
-        messages.success(request, message)
-        
-        # Return JSON if AJAX request
+        # Return JSON if AJAX request, otherwise redirect
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': True, 'message': message, 'action': action})
         else:
-            return redirect('product_detail', product_id=product_id)
+            messages.success(request, message)
+            return redirect('view_wishlist')
 
     except Customer.DoesNotExist:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -920,11 +831,74 @@ def vendor_dashboard(request):
             'products': products,
             'total_products': products.count(),
             'total_sales': total_sales,
+            'shop_photos': store.shop_photos.all(),
         }
         return render(request, 'store/vendor_dashboard.html', context)
     except Vendor.DoesNotExist:
         messages.error(request, "Vendor not found.")
         return redirect('vendor_login')
+
+
+@require_POST
+def upload_vendor_profile(request):
+    """Upload or replace the vendor's profile picture."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        image = request.FILES.get('profile_image')
+        if not image:
+            return JsonResponse({'error': 'No image provided'}, status=400)
+        if vendor.profileImage:
+            try:
+                import os
+                if os.path.isfile(vendor.profileImage.path):
+                    os.remove(vendor.profileImage.path)
+            except Exception:
+                pass
+        vendor.profileImage = image
+        vendor.save()
+        return JsonResponse({'success': True, 'url': vendor.profileImage.url})
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=404)
+
+
+@require_POST
+def upload_store_photo(request):
+    """Upload a shop gallery photo (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        store = vendor.store
+        image = request.FILES.get('photo')
+        caption = request.POST.get('caption', '').strip()
+        if not image:
+            return JsonResponse({'error': 'No image provided'}, status=400)
+        photo = StoreMedia.objects.create(storeID=store, image=image, caption=caption)
+        return JsonResponse({'success': True, 'id': photo.storeMediaID, 'url': photo.image.url, 'caption': photo.caption})
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=404)
+
+
+@require_POST
+def delete_store_photo(request, photo_id):
+    """Delete a shop gallery photo (vendor only)."""
+    if 'vendor_id' not in request.session:
+        return JsonResponse({'error': 'Please log in as vendor'}, status=401)
+    try:
+        vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
+        photo = get_object_or_404(StoreMedia, storeMediaID=photo_id, storeID=vendor.store)
+        try:
+            import os
+            if os.path.isfile(photo.image.path):
+                os.remove(photo.image.path)
+        except Exception:
+            pass
+        photo.delete()
+        return JsonResponse({'success': True})
+    except Vendor.DoesNotExist:
+        return JsonResponse({'error': 'Vendor not found'}, status=404)
 
 
 @require_POST
@@ -1270,11 +1244,6 @@ def vendor_orders(request):
             item.latest_status = item.statuses.last()
             # Vendors cannot update status if item is cancelled by customer
             item.can_update_status = item.latest_status.status != 'Cancelled' if item.latest_status else True
-            # Check for pending refund request
-            item.pending_refund = RefundRequest.objects.filter(
-                orderItemID=item,
-                status='pending'
-            ).first()
             orders_dict[order.orderID]['items'].append(item)
         
         # Convert to list and sort by order date

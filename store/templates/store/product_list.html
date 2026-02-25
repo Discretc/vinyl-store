@@ -49,7 +49,7 @@
                 {% endif %}
                 <div class="product-info">
                     <h3 class="product-name">{{ product.productName }}</h3>
-                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">{{ product.storeID.storeName }}</p>
+                    <a href="{% url 'shop_detail' product.storeID.storeID %}" style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-decoration: none;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='#666'">{{ product.storeID.storeName }}</a>
                     
                     <div style="min-height: 2rem; margin-bottom: 0.5rem;">
                         {% with promo=product.promotions.all|first %}

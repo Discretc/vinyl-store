@@ -26,7 +26,7 @@
     <!-- Product Info -->
     <div class="product-detail-info">
         <h1>{{ product.productName }}</h1>
-        <p style="color: #666; font-size: 1.1rem; margin-bottom: 1rem;">By: {{ product.storeID.storeName }}</p>
+        <p style="color: #666; font-size: 1.1rem; margin-bottom: 1rem;">By: <a href="{% url 'shop_detail' product.storeID.storeID %}" style="color: inherit; text-decoration: none; font-weight: 600;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='inherit'">{{ product.storeID.storeName }}</a></p>
 
         <!-- Price Section -->
         {% if active_promo %}
@@ -78,12 +78,7 @@
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="flex: 2;">Add to Cart</button>
-            </form>
-            <form method="post" action="{% url 'toggle_wishlist' product.productID %}" style="margin-top: 1rem;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-secondary" style="width: 100%;">
-                    {% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}
-                </button>
+                <button type="button" class="btn btn-secondary" onclick="toggleWishlist()"> {% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</button>
             </form>
         {% else %}
             <button class="btn btn-secondary" disabled>Out of Stock</button>
@@ -96,6 +91,7 @@
             {% if product.storeID.description %}
                 <p>{{ product.storeID.description }}</p>
             {% endif %}
+            <a href="{% url 'shop_detail' product.storeID.storeID %}" class="btn btn-secondary btn-small" style="margin-top: 0.75rem; display: inline-block;">Visit Shop →</a>
         </div>
     </div>
 </div>
@@ -155,6 +151,24 @@
 </section>
 
 <script>
+function toggleWishlist() {
+    fetch('{% url "toggle_wishlist" product.productID %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Error occurred');
+        }
+    });
+}
+
 document.getElementById('review-form')?.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
