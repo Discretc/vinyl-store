@@ -4,13 +4,40 @@ from django.db.models import Q, Avg, Sum
 from django.views.decorators.http import require_POST, require_GET
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from decimal import Decimal
+from io import BytesIO
+from PIL import Image
 import json
 
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
     OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia, RefundRequest
 )
+
+
+# ======================= HELPERS =======================
+
+REVIEW_PHOTO_SIZE = (800, 800)  # max width × height; aspect ratio preserved
+
+def _resize_review_photo(upload):
+    """Resize an uploaded review photo to fit within REVIEW_PHOTO_SIZE, return InMemoryUploadedFile."""
+    img = Image.open(upload)
+    if img.mode not in ('RGB', 'RGBA'):
+        img = img.convert('RGB')
+    elif img.mode == 'RGBA':
+        bg = Image.new('RGB', img.size, (255, 255, 255))
+        bg.paste(img, mask=img.split()[3])
+        img = bg
+    img.thumbnail(REVIEW_PHOTO_SIZE, Image.LANCZOS)
+    buf = BytesIO()
+    img.save(buf, format='JPEG', quality=85, optimize=True)
+    buf.seek(0)
+    return InMemoryUploadedFile(
+        buf, 'ImageField',
+        upload.name.rsplit('.', 1)[0] + '.jpg',
+        'image/jpeg', buf.getbuffer().nbytes, None
+    )
 
 
 # ======================= AUTHENTICATION VIEWS =======================
@@ -725,22 +752,39 @@ def add_review(request, product_id):
         if rating < 1 or rating > 5:
             return JsonResponse({'error': 'Invalid rating'}, status=400)
 
-        review, created = Review.objects.update_or_create(
+        photo = request.FILES.get('photo')
+        kwargs = {'rating': rating, 'comment': comment}
+        if photo:
+            kwargs['photo'] = _resize_review_photo(photo)
+
+        review = Review.objects.create(
             customerID=customer,
             productID=product,
-            defaults={'rating': rating, 'comment': comment}
+            **kwargs
         )
-
-        if created:
-            message = "Review added successfully!"
-        else:
-            message = "Review updated successfully!"
 
         return JsonResponse({
             'success': True,
-            'message': message,
+            'message': 'Review posted successfully!',
             'review_id': review.reviewID
         })
+    except Customer.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=400)
+
+
+@require_POST
+def delete_review(request, review_id):
+    """Delete the logged-in customer's own review."""
+    if 'customer_id' not in request.session:
+        return JsonResponse({'error': 'Please log in'}, status=401)
+    try:
+        customer = Customer.objects.get(customerID=request.session['customer_id'])
+        review = get_object_or_404(Review, reviewID=review_id, customerID=customer)
+        # Remove stored photo file from disk
+        if review.photo:
+            review.photo.delete(save=False)
+        review.delete()
+        return JsonResponse({'success': True})
     except Customer.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=400)
 
@@ -823,10 +867,12 @@ def view_wishlist(request):
             )
             item.active_promo = active_promo
             item.has_active_promo = active_promo is not None
+            # Use live discount rate if there's an active promo, else fall back to stored rate
+            item.sort_discount = active_promo.discountRate if active_promo else item.discountRate
 
         wishlist_items.sort(key=lambda x: (
-            not x.has_active_promo,
-            x.active_promo.endDate if x.active_promo else timezone.now().replace(year=9999)
+            x.sort_discount <= 0,
+            -x.sort_discount
         ))
 
         context = {'wishlist_items': wishlist_items}

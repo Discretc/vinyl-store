@@ -126,6 +126,13 @@ button:hover {
     color: #ffffff;
 }
 
+.nav-link.active {
+    color: #c0392b;
+    background-color: transparent;
+    border-bottom: 2px solid #c0392b;
+    padding-bottom: calc(0.5rem - 2px);
+}
+
 .logout-link {
     color: var(--grey);
     font-weight: bold;
@@ -215,11 +222,23 @@ button:hover {
     font-size: 2rem;
     margin-bottom: 2rem;
     color: #000000;
-    border-bottom: 3px solid #000000;
     padding-bottom: 1rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
+    position: relative;
+    border-bottom: none;
+}
+
+.page-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 2.8rem;
+    height: 3px;
+    background: #c0392b;
+    border-radius: 2px;
 }
 
 /* ======================= FORMS ======================= */
@@ -262,7 +281,7 @@ textarea,
 select {
     padding: 0.75rem 1rem;
     border: 1px solid #e5e5e5;
-    border-radius: 2px;
+    border-radius: 6px;
     font-size: 0.95rem;
     font-family: inherit;
     transition: all 0.2s ease;
@@ -274,8 +293,8 @@ input:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: #000000;
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.08);
 }
 
 textarea {
@@ -374,15 +393,15 @@ textarea {
     border-radius: 4px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     border: 1px solid #e5e5e5;
     position: relative;
 }
 
 .product-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-color: #d0d0d0;
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.13);
+    border-color: #c0392b;
 }
 
 .product-image {
@@ -391,6 +410,11 @@ textarea {
     object-fit: cover;
     background: #f5f5f5;
     display: block;
+    transition: transform 0.4s ease;
+}
+
+.product-card:hover .product-image {
+    transform: scale(1.05);
 }
 
 .product-info {
@@ -472,37 +496,47 @@ textarea {
 /* ======================= HERO SECTION ======================= */
 
 .hero {
-    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/media/product_images/vinyl1.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    background: linear-gradient(rgba(0,0,0,0.62), rgba(28,8,8,0.72)),
+                url('/media/product_images/vinyl1.jpg') center/cover no-repeat fixed;
     color: #ffffff;
-    padding: 4rem 2rem;
+    padding: 7rem 3rem;
     text-align: center;
-    border-radius: 0;
-    margin-bottom: 3rem;
-    border-top: 3px solid #000;
-    border-bottom: 3px solid #000;
+    border-radius: 4px;
+    margin-bottom: 4rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(192, 57, 43, 0.14) 0%, transparent 68%);
+    pointer-events: none;
 }
 
 .hero h1 {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     margin-bottom: 1rem;
-    font-weight: 700;
+    font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 3px;
     color: #ffffff;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    position: relative;
 }
 
 .hero p {
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
-    opacity: 1;
-    color: #ffffff;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-size: 0.9rem;
+    margin-bottom: 2.5rem;
+    color: rgba(255, 255, 255, 0.55);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    position: relative;
 }
 
 .hero-buttons {
@@ -510,6 +544,7 @@ textarea {
     gap: 1rem;
     justify-content: center;
     flex-wrap: wrap;
+    position: relative;
 }
 
 /* ======================= PRODUCT DETAIL ======================= */
@@ -642,18 +677,30 @@ textarea {
 
 .empty-state {
     text-align: center;
-    padding: 3rem;
+    padding: 4rem 2rem;
     color: #999;
 }
 
 .empty-state-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+    font-size: 2.4rem;
+    width: 5.5rem;
+    height: 5.5rem;
+    background: #f0f0f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    border: 2px solid #e5e5e5;
 }
 
 .empty-state-message {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* ======================= REVIEWS ======================= */
@@ -703,6 +750,76 @@ textarea {
 .review-comment {
     color: #666;
     line-height: 1.6;
+}
+
+.review-photo {
+    margin-top: 0.85rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.review-photo a {
+    display: block;
+    width: 140px;
+    height: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    overflow: hidden;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+    background: #f5f5f5;
+}
+
+.review-photo img {
+    width: 140px;
+    height: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.review-photo a:hover img {
+    transform: scale(1.04);
+}
+
+.review-photo-preview {
+    margin-top: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.review-photo-preview img {
+    max-width: 140px;
+    max-height: 110px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.review-photo-clear,
+.review-delete-btn {
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.8rem;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.review-photo-clear:hover,
+.review-delete-btn:hover {
+    border-color: #c0392b;
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.04);
 }
 
 /* ======================= FOOTER ======================= */

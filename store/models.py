@@ -336,11 +336,12 @@ class Review(models.Model):
     productID = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField(blank=True)
+    photo = models.ImageField(upload_to='review_photos/', blank=True, null=True)
     createdDate = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'review'
-        unique_together = ('customerID', 'productID')
+        ordering = ['-createdDate']
 
     def __str__(self):
         return f"Review by {self.customerID} for {self.productID} - {self.rating}★"

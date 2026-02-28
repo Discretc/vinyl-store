@@ -104,7 +104,7 @@
         {% if has_purchased %}
             <div class="review-form">
                 <h3>Write a Review</h3>
-                <form id="review-form" method="post" action="{% url 'add_review' product.productID %}" style="display: flex; flex-direction: column; gap: 1rem;">
+                <form id="review-form" method="post" action="{% url 'add_review' product.productID %}" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="rating">Rating:</label>
@@ -120,6 +120,14 @@
                         <label for="comment">Comment:</label>
                         <textarea id="comment" name="comment" placeholder="Share your thoughts..."></textarea>
                     </div>
+                    <div class="form-group">
+                        <label for="review-photo">Photo <span style="color:#999; font-weight:400;">(optional)</span></label>
+                        <input type="file" id="review-photo" name="photo" accept="image/*">
+                        <div id="photo-preview" class="review-photo-preview" style="display:none;">
+                            <img id="preview-img" src="" alt="Preview">
+                            <button type="button" class="review-photo-clear" onclick="clearPhotoPreview()">✕ Remove</button>
+                        </div>
+                    </div>
                     <button type="submit" class="btn btn-primary">Post Review</button>
                 </form>
             </div>
@@ -132,16 +140,28 @@
 
     {% if reviews %}
         {% for review in reviews %}
-            <div class="review-item">
+            <div class="review-item" data-review-id="{{ review.reviewID }}">
                 <div class="review-header">
                     <div>
                         <div class="review-author">{{ review.customerID.firstName }} {{ review.customerID.lastName }}</div>
                         <div class="review-rating">{{ review.rating }} star{{ review.rating|pluralize }}</div>
                     </div>
-                    <div class="review-date">{{ review.createdDate|date:"M d, Y" }}</div>
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <div class="review-date">{{ review.createdDate|date:"M d, Y" }}</div>
+                        {% if request.session.user_type == 'customer' and review.customerID.customerID == request.session.customer_id %}
+                            <button class="review-delete-btn" onclick="deleteReview({{ review.reviewID }})" title="Delete review">✕ Delete</button>
+                        {% endif %}
+                    </div>
                 </div>
                 {% if review.comment %}
                     <div class="review-comment">{{ review.comment }}</div>
+                {% endif %}
+                {% if review.photo %}
+                    <div class="review-photo">
+                        <a href="{{ review.photo.url }}" target="_blank">
+                            <img src="{{ review.photo.url }}" alt="Review photo by {{ review.customerID.firstName }}">
+                        </a>
+                    </div>
                 {% endif %}
             </div>
         {% endfor %}
@@ -169,6 +189,51 @@ function toggleWishlist() {
     });
 }
 
+// Photo preview
+const photoInput = document.getElementById('review-photo');
+if (photoInput) {
+    photoInput.addEventListener('change', function() {
+        const file = this.files[0];
+        const preview = document.getElementById('photo-preview');
+        const previewImg = document.getElementById('preview-img');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                previewImg.src = e.target.result;
+                preview.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+}
+
+function clearPhotoPreview() {
+    const photoInput = document.getElementById('review-photo');
+    const preview = document.getElementById('photo-preview');
+    photoInput.value = '';
+    preview.style.display = 'none';
+}
+
+function deleteReview(reviewId) {
+    if (!confirm('Delete your review? This cannot be undone.')) return;
+    fetch(`/reviews/${reviewId}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const card = document.querySelector(`.review-item[data-review-id="${reviewId}"]`);
+            if (card) card.remove();
+            location.reload();
+        } else {
+            alert(data.error || 'Could not delete review');
+        }
+    });
+}
+
 document.getElementById('review-form')?.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
@@ -176,6 +241,7 @@ document.getElementById('review-form')?.addEventListener('submit', function(e) {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}'
+            // No Content-Type: browser sets it automatically with boundary for multipart
         },
         body: formData
     })
