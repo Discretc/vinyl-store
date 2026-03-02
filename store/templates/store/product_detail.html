@@ -30,13 +30,11 @@
 
         <!-- Price Section -->
         {% if active_promo %}
-            <p style="text-decoration: line-through; color: #999; font-size: 1.2rem; margin-bottom: 0.5rem;">
-                ${{ product.price|floatformat:2 }}
-            </p>
-            <p class="product-detail-price">
-                ${{ discounted_price|floatformat:2 }}
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <p class="product-detail-price" style="margin: 0;">${{ discounted_price|floatformat:2 }}</p>
+                <p style="margin: 0; text-decoration: line-through; color: #999; font-size: 1.2rem;">${{ product.price|floatformat:2 }}</p>
                 <span class="product-discount">-{{ active_promo.discountRate }}% OFF</span>
-            </p>
+            </div>
         {% else %}
             <p class="product-detail-price">${{ product.price|floatformat:2 }}</p>
         {% endif %}
@@ -62,7 +60,7 @@
         </p>
 
         <!-- Description -->
-        <div style="background-color: var(--light-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+        <div style="background-color: var(--border-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
             <h3>Description</h3>
             <p>{{ product.description }}</p>
         </div>
@@ -77,8 +75,10 @@
                         <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product.stockQuantity }}">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary" style="flex: 2;">Add to Cart</button>
-                <button type="button" class="btn btn-secondary" onclick="toggleWishlist()"> {% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</button>
+                <div style="display: flex; flex: 2; flex-direction: column; gap: 0.6rem;">
+                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleWishlist()">{% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</button>
+                </div>
             </form>
         {% else %}
             <button class="btn btn-secondary" disabled>Out of Stock</button>
@@ -176,17 +176,19 @@ function toggleWishlist() {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            showToast(data.message);
+            setTimeout(() => location.reload(), 800);
         } else {
-            alert(data.error || 'Error occurred');
+            showToast(data.error || 'Error occurred', 'error');
         }
-    });
+    })
+    .catch(() => showToast('Error occurred', 'error'));
 }
 
 // Photo preview

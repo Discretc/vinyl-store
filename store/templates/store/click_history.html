@@ -7,6 +7,7 @@
 
 {% if click_history %}
     <div class="container" style="max-width: 100%; margin-bottom: 2rem;">
+        <div class="cart-table-wrapper">
         <table class="cart-table">
             <thead>
                 <tr>
@@ -33,6 +34,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div><!-- /cart-table-wrapper -->
     </div>
 {% else %}
     <div class="empty-state">

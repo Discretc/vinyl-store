@@ -15,7 +15,7 @@
             {% with order=order_data.order items=order_data.items %}
             <div style="padding: 1.5rem; border: 2px solid var(--border-color); border-radius: 10px; margin-bottom: 1.5rem;">
                 <!-- Order Header -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                <div class="vendor-order-header" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
                     <div>
                         <strong>Order #{{ order.orderID }}</strong>
                         <p style="color: #666; font-size: 0.9rem;">{{ order.orderDate|date:"M d, Y H:i" }}</p>
@@ -35,7 +35,7 @@
                 <div style="margin-top: 1rem;">
                     <strong style="display: block; margin-bottom: 0.75rem;">Your Products in This Order:</strong>
                     {% for item in items %}
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap: 1rem; align-items: center; padding: 1rem; background-color: var(--light-color); border-radius: 8px; margin-bottom: 0.75rem;">
+                        <div class="vendor-order-item" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap: 1rem; align-items: center; padding: 1rem; background-color: var(--light-color); border-radius: 8px; margin-bottom: 0.75rem;">
                             <div>
                                 <a href="{% url 'product_detail' item.productID.productID %}" style="font-weight: 500; color: var(--dark-color);">
                                     {{ item.productID.productName }}

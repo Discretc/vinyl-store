@@ -17,36 +17,76 @@
     </div>
 </div>
 
-<section class="featured-products">
-    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--black-color);">Featured Products</h2>
+{% if on_sale %}
+<section class="home-section container">
+    <div class="home-section-header">
+        <div>
+            <h2 class="home-section-title">On Sale Now</h2>
+            <p class="home-section-sub">Limited-time deals — prices as marked, no code required.</p>
+        </div>
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-small">See All &rarr;</a>
+    </div>
+    <div class="product-grid">
+        {% for product in on_sale %}
+            <div class="product-card">
+                <div class="product-image-wrap">
+                    {% if product.media.all %}
+                        {% with primary=product.media.filter|dictsort:"isPrimary" %}
+                            <img src="{{ primary.0.mediaURL.url }}" alt="{{ product.productName }}" class="product-image">
+                        {% endwith %}
+                    {% else %}
+                        <div style="width:100%;height:250px;background:var(--light-color);display:flex;align-items:center;justify-content:center;color:#999;">No image</div>
+                    {% endif %}
+                    <span class="sale-badge">Sale</span>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name">{{ product.productName }}</h3>
+                    <a href="{% url 'shop_detail' product.storeID.storeID %}" class="product-store-link">{{ product.storeID.storeName }}</a>
+                    <div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+                        <span class="product-price" style="margin:0;">${{ product.discounted_price|floatformat:2 }}</span>
+                        <span style="color:#999;text-decoration:line-through;font-size:0.9rem;">${{ product.price|floatformat:2 }}</span>
+                    </div>
+                    <div class="product-actions">
+                        <a href="{% url 'product_detail' product.productID %}" class="btn btn-secondary btn-small">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if featured_products %}
+<section class="home-section container">
+    <div class="home-section-header">
+        <h2 class="home-section-title">Featured Products</h2>
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-small">Browse All &rarr;</a>
+    </div>
     <div class="product-grid">
         {% for product in featured_products %}
             <div class="product-card">
-                {% if product.media.all %}
-                    {% with primary=product.media.filter|dictsort:"isPrimary" %}
-                        <img src="{{ primary.0.mediaURL.url }}" alt="{{ product.productName }}" class="product-image">
-                    {% endwith %}
-                {% else %}
-                    <div style="width: 100%; height: 250px; background-color: var(--light-color); display: flex; align-items: center; justify-content: center; color: #999;">No image</div>
-                {% endif %}
+                <div class="product-image-wrap">
+                    {% if product.media.all %}
+                        {% with primary=product.media.filter|dictsort:"isPrimary" %}
+                            <img src="{{ primary.0.mediaURL.url }}" alt="{{ product.productName }}" class="product-image">
+                        {% endwith %}
+                    {% else %}
+                        <div style="width:100%;height:250px;background:var(--light-color);display:flex;align-items:center;justify-content:center;color:#999;">No image</div>
+                    {% endif %}
+                </div>
                 <div class="product-info">
                     <h3 class="product-name">{{ product.productName }}</h3>
-                    <p class="product-price">${{ product.price|floatformat:2 }}</p>
-                    <p class="product-stock {% if product.stockQuantity == 0 %}out{% elif product.stockQuantity < 5 %}low{% endif %}">
-                        {% if product.stockQuantity > 0 %}
-                            {{ product.stockQuantity }} in stock
-                        {% else %}
-                            Out of stock
-                        {% endif %}
-                    </p>
+                    <a href="{% url 'shop_detail' product.storeID.storeID %}" class="product-store-link">{{ product.storeID.storeName }}</a>
+                    <p class="product-price" style="margin-bottom:0.5rem;">${{ product.price|floatformat:2 }}</p>
                     <div class="product-actions">
-                        <a href="{% url 'product_detail' product.productID %}" class="btn btn-primary btn-small">View Details</a>
+                        <a href="{% url 'product_detail' product.productID %}" class="btn btn-secondary btn-small">View Details</a>
                     </div>
                 </div>
             </div>
         {% empty %}
-            <p style="grid-column: 1/-1; text-align: center; color: #999;">No products available yet. Check back soon!</p>
+            <p style="grid-column:1/-1;text-align:center;color:#999;">No products available yet.</p>
         {% endfor %}
     </div>
 </section>
+{% endif %}
 {% endblock %}

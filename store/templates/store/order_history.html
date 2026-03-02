@@ -3,7 +3,7 @@
 {% block title %}Order History - Vinyl Store{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div class="order-history-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h2 class="page-title" style="margin: 0;">My Orders</h2>
     
     <!-- Status Filter -->
@@ -22,7 +22,7 @@
     <div class="container">
         {% for order in orders %}
             <div style="padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="order-card-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div>
                         <strong>Order #{{ order.orderID }}</strong>
                         <p style="color: #666; font-size: 0.9rem;">{{ order.orderDate|date:"M d, Y H:i" }}</p>

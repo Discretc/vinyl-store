@@ -40,6 +40,9 @@ urlpatterns = [
     # Click History
     path('click-history/', views.view_click_history, name='view_click_history'),
 
+    # Customer Profile
+    path('profile/', views.customer_profile, name='customer_profile'),
+
     # Vendor Dashboard
     path('vendor/dashboard/', views.vendor_dashboard, name='vendor_dashboard'),
     path('vendor/product/add/', views.add_product, name='add_product'),

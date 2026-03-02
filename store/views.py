@@ -12,7 +12,8 @@ import json
 
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
-    OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia, RefundRequest
+    OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia, RefundRequest,
+    CancelledItem
 )
 
 
@@ -194,8 +195,32 @@ def logout(request):
 
 def home(request):
     """Home page with featured products."""
-    featured_products = Product.objects.filter(availability=True)[:6]
-    context = {'featured_products': featured_products}
+    all_products = list(
+        Product.objects.filter(availability=True)
+        .select_related('storeID')
+        .prefetch_related('promotions')
+        .annotate(avg_rating=Avg('reviews__rating'))
+    )
+
+    # Annotate each product with discount info
+    for product in all_products:
+        promo = product.promotions.filter(status='active').first()
+        if promo and promo.is_active():
+            product.has_discount = True
+            product.discount_percent = int(promo.discountRate)
+            product.discounted_price = product.price - promo.get_discount_amount(product.price)
+        else:
+            product.has_discount = False
+            product.discount_percent = 0
+            product.discounted_price = product.price
+
+    on_sale = [p for p in all_products if p.has_discount][:10]
+    featured_products = [p for p in all_products if not p.has_discount][:6]
+
+    context = {
+        'featured_products': featured_products,
+        'on_sale': on_sale,
+    }
     return render(request, 'store/home.html', context)
 
 
@@ -204,19 +229,6 @@ def product_list(request):
     products = Product.objects.filter(availability=True).select_related('storeID').prefetch_related('promotions').annotate(
         avg_rating=Avg('reviews__rating')
     )
-
-    # Add discounted price for each product based on promotions
-    for product in products:
-        promo = product.promotions.filter(status='active').first()
-        if promo and promo.is_active():
-            # The product.price is the original price
-            # Calculate the discounted price
-            discount_amount = promo.get_discount_amount(product.price)
-            product.discounted_price = product.price - discount_amount
-            product.has_discount = True
-        else:
-            product.discounted_price = product.price
-            product.has_discount = False
 
     # Search by product name or description
     search_query = request.GET.get('search', '').strip()
@@ -238,6 +250,20 @@ def product_list(request):
         products = products.filter(price__gte=min_price)
     if max_price:
         products = products.filter(price__lte=max_price)
+
+    # Evaluate queryset then annotate discount info (must be after all filters)
+    products = list(products)
+    for product in products:
+        promo = product.promotions.filter(status='active').first()
+        if promo and promo.is_active():
+            discount_amount = promo.get_discount_amount(product.price)
+            product.discounted_price = product.price - discount_amount
+            product.discount_percent = int(promo.discountRate)
+            product.has_discount = True
+        else:
+            product.discounted_price = product.price
+            product.discount_percent = 0
+            product.has_discount = False
 
     # Get all stores for filter dropdown
     stores = Store.objects.all()
@@ -420,6 +446,7 @@ def view_cart(request):
                     break
             
             # Add computed subtotal properties
+            item.effective_price = price
             item.subtotal = product.price * item.quantity
             item.subtotal_with_promo = price * item.quantity
             
@@ -890,14 +917,65 @@ def view_click_history(request):
 
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
-        # Get click history ordered by most recent first
-        click_history = customer.click_history.all().select_related('productID').order_by('-viewedDate')
+        # Get click history ordered by most recent first, deduplicated per product
+        all_history = customer.click_history.all().select_related('productID').order_by('-viewedDate')
+        seen = set()
+        click_history = []
+        for entry in all_history:
+            if entry.productID_id not in seen:
+                seen.add(entry.productID_id)
+                click_history.append(entry)
 
         context = {'click_history': click_history}
         return render(request, 'store/click_history.html', context)
     except Customer.DoesNotExist:
         messages.error(request, "User not found.")
         return redirect('customer_login')
+
+
+def customer_profile(request):
+    """View and edit customer profile information."""
+    if 'customer_id' not in request.session:
+        messages.error(request, "Please log in to view your profile.")
+        return redirect('customer_login')
+    try:
+        customer = Customer.objects.get(customerID=request.session['customer_id'])
+    except Customer.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('customer_login')
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        shipping_address = request.POST.get('shipping_address', '').strip()
+        new_password = request.POST.get('new_password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+
+        if not first_name or not last_name:
+            messages.error(request, 'First and last name are required.')
+            return redirect('customer_profile')
+
+        if new_password:
+            if new_password != confirm_password:
+                messages.error(request, 'Passwords do not match.')
+                return redirect('customer_profile')
+            if len(new_password) < 6:
+                messages.error(request, 'Password must be at least 6 characters.')
+                return redirect('customer_profile')
+            customer.set_password(new_password)
+
+        customer.firstName = first_name
+        customer.lastName = last_name
+        customer.phoneNumber = phone
+        customer.shippingAddress = shipping_address
+        customer.save()
+
+        request.session['customer_name'] = f"{first_name} {last_name}"
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('customer_profile')
+
+    return render(request, 'store/customer_profile.html', {'customer': customer})
 
 
 # ======================= VENDOR DASHBOARD VIEWS =======================

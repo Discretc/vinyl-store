@@ -34,7 +34,7 @@
         <h3 style="font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1.5rem;">Product Images</h3>
 
         <!-- Upload New Image Form -->
-        <form id="upload-image-form" enctype="multipart/form-data" style="display: flex; flex-direction: row; gap: 1rem; align-items: flex-end; padding: 1.25rem; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 1.5rem; background: #fafafa;">
+        <form id="upload-image-form" enctype="multipart/form-data" class="edit-upload-form" style="display: flex; flex-direction: row; gap: 1rem; align-items: flex-end; padding: 1.25rem; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 1.5rem; background: #fafafa; flex-wrap: wrap;">
             {% csrf_token %}
             <div class="form-group" style="flex: 1; margin-bottom: 0;">
                 <label for="image">Image File</label>
@@ -79,7 +79,7 @@
         <!-- Add Promotion Form -->
         <form id="add-promotion-form" style="padding: 1.25rem; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 1.5rem; background: #fafafa;">
             {% csrf_token %}
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="promo-form-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="discount_rate">Discount %</label>
                     <input type="number" id="discount_rate" name="discount_rate" min="1" max="100" step="0.01" placeholder="e.g. 20" required>
@@ -100,7 +100,7 @@
         <div id="promotions-list">
             {% if promotions %}
                 {% for promo in promotions %}
-                    <div class="promotion-item" data-promo-id="{{ promo.promotionID }}" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 0.75rem; background: #fff;">
+                    <div class="promotion-item" data-promo-id="{{ promo.promotionID }}" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 0.75rem; background: #fff; flex-wrap: wrap;">
                         <div style="min-width: 80px;">
                             <span style="font-size: 1.1rem; font-weight: 700; color: #1a1a1a;">{{ promo.discountRate }}% OFF</span>
                         </div>

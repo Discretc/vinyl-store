@@ -11,7 +11,7 @@
 </div>
 
 <!-- Info Cards -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; max-width: 100%;">
+<div class="vendor-info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; max-width: 100%;">
     <div class="container" style="margin: 0;">
         <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Store Information</h3>
         <div style="display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1rem; flex-wrap: wrap;">
@@ -30,11 +30,13 @@
                 <p style="font-size: 1.05rem; margin-bottom: 0.25rem;"><strong>{{ store.storeName }}</strong></p>
                 <p style="color: #666; font-size: 0.88rem; margin-bottom: 0.4rem;">{{ store.description }}</p>
                 <p style="color: #999; font-size: 0.8rem; margin-bottom: 0.5rem;">Created: {{ store.createdTime|date:"M d, Y" }}</p>
-                <label class="btn btn-secondary btn-small" style="cursor: pointer; font-size: 0.8rem; padding: 0.3rem 0.7rem;">
-                    Change Photo
-                    <input type="file" id="profileImageInput" accept="image/*" style="display:none;" onchange="uploadProfileImage(this)">
-                </label>
-                <a href="{% url 'shop_detail' store.storeID %}" class="btn btn-secondary btn-small" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">View My Shop →</a>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                    <label class="btn btn-secondary btn-small" style="cursor: pointer; font-size: 0.8rem; padding: 0.3rem 0.7rem;">
+                        Change Photo
+                        <input type="file" id="profileImageInput" accept="image/*" style="display:none;" onchange="uploadProfileImage(this)">
+                    </label>
+                    <a href="{% url 'shop_detail' store.storeID %}" class="btn btn-secondary btn-small" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">View My Shop →</a>
+                </div>
             </div>
         </div>
     </div>
@@ -53,11 +55,11 @@
 
     <!-- Existing Photos -->
     {% if shop_photos %}
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="shop-photos-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
             {% for photo in shop_photos %}
-                <div style="position: relative; width: 130px;">
+                <div style="position: relative;">
                     <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:'Shop photo' }}"
-                         style="width: 130px; height: 90px; object-fit: cover; border-radius: 8px; display: block;">
+                         style="width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; display: block;">
                     {% if photo.caption %}
                         <p style="font-size: 0.75rem; color: #666; margin-top: 0.2rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ photo.caption }}</p>
                     {% endif %}
@@ -73,7 +75,7 @@
     <!-- Upload New Photo -->
     <form id="shop-photo-form" enctype="multipart/form-data">
         {% csrf_token %}
-        <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+        <div class="shop-upload-form" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
             <div class="form-group" style="margin: 0; flex: 1; min-width: 160px;">
                 <label for="shopPhotoFile" style="font-size: 0.85rem;">Photo:</label>
                 <input type="file" id="shopPhotoFile" name="photo" accept="image/*" required>
@@ -118,6 +120,7 @@
 <div class="container">
     <h3>Your Products</h3>
     {% if products %}
+        <div class="cart-table-wrapper">
         <table class="cart-table">
             <thead>
                 <tr>
@@ -160,6 +163,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div><!-- /cart-table-wrapper -->
     {% else %}
         <p style="text-align: center; color: #999;">No products yet. Add your first product above!</p>
     {% endif %}

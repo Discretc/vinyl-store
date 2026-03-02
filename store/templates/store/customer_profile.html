@@ -1,0 +1,100 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}My Profile – Vinyl Store{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  <div class="container" style="max-width: 860px;">
+    <h1>Account Info</h1>
+  </div>
+</div>
+
+<div class="container" style="max-width: 860px; margin: 2rem auto;">
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }}" style="
+        padding: .85rem 1.1rem;
+        margin-bottom: 1.25rem;
+        border-radius: 4px;
+        font-size: .95rem;
+        background: {% if msg.tags == 'success' %}#eafaf1{% else %}#fdf3f2{% endif %};
+        color: {% if msg.tags == 'success' %}#1e8449{% else %}#c0392b{% endif %};
+        border: 1px solid {% if msg.tags == 'success' %}#a9dfbf{% else %}#f5c6c2{% endif %};">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="profile-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+
+      <!-- Personal Information -->
+      <section style="background:#fff; border: 1px solid #e5e5e5; border-radius: 4px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06);">
+        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1.25rem; padding-bottom: .6rem; border-bottom: 2px solid #c0392b; color: #1a1a1a;">Personal Information</h2>
+
+        <div class="form-group">
+          <label for="id_first_name">First Name</label>
+          <input type="text" id="id_first_name" name="first_name"
+                 value="{{ customer.firstName }}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="id_last_name">Last Name</label>
+          <input type="text" id="id_last_name" name="last_name"
+                 value="{{ customer.lastName }}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="id_email">Email <span style="color:#888;font-weight:400;font-size:.85rem;">(cannot be changed)</span></label>
+          <input type="email" id="id_email" value="{{ customer.email }}"
+                 class="form-control" disabled style="background:#f7f7f7; color:#888;">
+        </div>
+
+        <div class="form-group">
+          <label for="id_phone">Phone Number</label>
+          <input type="text" id="id_phone" name="phone"
+                 value="{{ customer.phoneNumber }}" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="id_address">Shipping Address</label>
+          <textarea id="id_address" name="shipping_address"
+                    class="form-control" rows="3">{{ customer.shippingAddress }}</textarea>
+        </div>
+      </section>
+
+      <!-- Change Password -->
+      <section style="background:#fff; border: 1px solid #e5e5e5; border-radius: 4px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06);">
+        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1.25rem; padding-bottom: .6rem; border-bottom: 2px solid #c0392b; color: #1a1a1a;">Change Password</h2>
+        <p style="font-size:.88rem; color:#666; margin-bottom:1rem;">Leave both fields blank to keep your current password.</p>
+
+        <div class="form-group">
+          <label for="id_new_password">New Password</label>
+          <input type="password" id="id_new_password" name="new_password"
+                 class="form-control" autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+          <label for="id_confirm_password">Confirm New Password</label>
+          <input type="password" id="id_confirm_password" name="confirm_password"
+                 class="form-control" autocomplete="new-password">
+        </div>
+
+        <p style="font-size:.82rem; color:#999; margin-top:.5rem;">Minimum 6 characters.</p>
+      </section>
+
+    </div>
+
+    <div style="margin-top: 1.5rem; text-align: right;">
+      <button type="submit" class="btn btn-primary" style="padding: .65rem 2rem; font-size: 1rem;">
+        Save Changes
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

@@ -7,6 +7,7 @@
 
 {% if cart_items %}
     <div class="container">
+        <div class="cart-table-wrapper">
         <table class="cart-table">
             <thead>
                 <tr>
@@ -20,59 +21,32 @@
             <tbody>
                 {% for item in cart_items %}
                     {% with product=item.productID %}
-                        {% with promo=product.promotions.all|first %}
-                            {% if promo.is_active %}
-                                {% with final_price=product.price|add:promo.get_discount_amount %}
-                                    <tr>
-                                        <td>
-                                            <a href="{% url 'product_detail' product.productID %}">{{ product.productName }}</a>
-                                            <br><small style="color: #666;">{{ product.storeID.storeName }}</small>
-                                        </td>
-                                        <td>${{ final_price|floatformat:2 }}</td>
-                                        <td>
-                                            <form method="post" action="{% url 'update_cart_item' item.pk %}" style="display: inline;">
-                                                {% csrf_token %}
-                                                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" style="width: 60px;">
-                                                <button type="submit" class="btn btn-small" style="padding: 0.25rem 0.5rem;">Update</button>
-                                            </form>
-                                        </td>
-                                        <td>${{ item.subtotal_with_promo|floatformat:2 }}</td>
-                                        <td>
-                                            <form method="post" action="{% url 'remove_from_cart' item.pk %}" style="display: inline;">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-small btn-secondary">Remove</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                {% endwith %}
-                            {% else %}
-                                <tr>
-                                    <td>
-                                        <a href="{% url 'product_detail' product.productID %}">{{ product.productName }}</a>
-                                        <br><small style="color: #666;">{{ product.storeID.storeName }}</small>
-                                    </td>
-                                    <td>${{ product.price|floatformat:2 }}</td>
-                                    <td>
-                                        <form method="post" action="{% url 'update_cart_item' item.pk %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" style="width: 60px;">
-                                            <button type="submit" class="btn btn-small" style="padding: 0.25rem 0.5rem;">Update</button>
-                                        </form>
-                                    </td>
-                                    <td>${{ item.subtotal|floatformat:2 }}</td>
-                                    <td>
-                                        <form method="post" action="{% url 'remove_from_cart' item.pk %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-small btn-secondary">Remove</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        {% endwith %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'product_detail' product.productID %}">{{ product.productName }}</a>
+                                <br><small style="color: #666;">{{ product.storeID.storeName }}</small>
+                            </td>
+                            <td>${{ item.effective_price|floatformat:2 }}</td>
+                            <td>
+                                <form method="post" action="{% url 'update_cart_item' item.pk %}" class="cart-qty-form" style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem;">
+                                    {% csrf_token %}
+                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1" style="width: 54px; text-align: center;">
+                                    <button type="submit" class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Update</button>
+                                </form>
+                            </td>
+                            <td>${{ item.subtotal_with_promo|floatformat:2 }}</td>
+                            <td>
+                                <form method="post" action="{% url 'remove_from_cart' item.pk %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-small btn-secondary">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
                     {% endwith %}
                 {% endfor %}
             </tbody>
         </table>
+        </div><!-- /cart-table-wrapper -->
 
         <div class="cart-summary">
             <div class="cart-summary-row">
