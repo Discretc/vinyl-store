@@ -1,0 +1,117 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Notifications - VinylTage{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <div class="container" style="max-width:860px; background:none; box-shadow:none; border:none; padding:0;">
+        <h1>Notifications</h1>
+    </div>
+</div>
+
+<div class="container" style="max-width:860px;">
+
+    {% if notifications %}
+    <div class="notif-toolbar">
+        <span class="notif-summary">
+            {% with unread=notifications|length %}
+                {{ notifications|length }} notification{{ notifications|length|pluralize }}
+            {% endwith %}
+        </span>
+        <button class="btn btn-small btn-outline" id="markAllReadBtn">Mark all as read</button>
+    </div>
+
+    <ul class="notif-list">
+        {% for n in notifications %}
+        <li class="notif-item{% if not n.isRead %} unread{% endif %}" data-id="{{ n.notificationID }}">
+            <div class="notif-icon-col">
+                {% if n.notificationType == 'new_order' %}
+                    <span class="notif-icon notif-icon--order">📦</span>
+                {% elif n.notificationType == 'refund_request' %}
+                    <span class="notif-icon notif-icon--refund">🔄</span>
+                {% elif n.notificationType == 'wishlist_promo' %}
+                    <span class="notif-icon notif-icon--promo">🏷️</span>
+                {% elif n.notificationType == 'order_status' %}
+                    <span class="notif-icon notif-icon--status">📋</span>
+                {% elif n.notificationType == 'refund_response' %}
+                    <span class="notif-icon notif-icon--response">✉️</span>
+                {% else %}
+                    <span class="notif-icon">🔔</span>
+                {% endif %}
+            </div>
+            <div class="notif-body">
+                <div class="notif-title">{{ n.title }}</div>
+                <div class="notif-message">{{ n.message }}</div>
+                <div class="notif-time">{{ n.createdTime|timesince }} ago</div>
+            </div>
+            <div class="notif-actions">
+                {% if n.link %}
+                    <a href="{{ n.link }}" class="btn btn-small">View</a>
+                {% endif %}
+                {% if not n.isRead %}
+                    <button class="btn btn-small btn-outline mark-read-btn">Read</button>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🔔</div>
+        <p>No notifications yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrf = '{{ csrf_token }}';
+
+    // Mark single notification as read
+    document.querySelectorAll('.mark-read-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const item = btn.closest('.notif-item');
+            const nid = item.dataset.id;
+            fetch(`/notifications/${nid}/read/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/json'}
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    item.classList.remove('unread');
+                    btn.remove();
+                    // Update badge in nav
+                    const badge = document.querySelector('.nav-icon-btn[title="Notifications"] .cart-badge');
+                    if (badge) {
+                        let c = parseInt(badge.textContent) - 1;
+                        if (c <= 0) badge.remove();
+                        else badge.textContent = c;
+                    }
+                }
+            });
+        });
+    });
+
+    // Mark all as read
+    const markAllBtn = document.getElementById('markAllReadBtn');
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function() {
+            fetch('/notifications/mark-all-read/', {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/json'}
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    document.querySelectorAll('.notif-item.unread').forEach(function(item) {
+                        item.classList.remove('unread');
+                        const btn = item.querySelector('.mark-read-btn');
+                        if (btn) btn.remove();
+                    });
+                    const badge = document.querySelector('.nav-icon-btn[title="Notifications"] .cart-badge');
+                    if (badge) badge.remove();
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

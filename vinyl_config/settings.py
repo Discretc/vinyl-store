@@ -62,12 +62,19 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "store.context_processors.cart_count",
+                "store.context_processors.unread_notification_count",
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = "vinyl_config.wsgi.application"
+
+# Sessions — each browser/device gets its own independent session
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True
 
 
 # Database

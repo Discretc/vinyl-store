@@ -1,7 +1,8 @@
 from django.contrib import admin
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
-    OrderStatus, CancelledItem, WishlistItem, Promotion, Review, ClickHistory, RefundRequest
+    OrderStatus, CancelledItem, WishlistItem, Promotion, Review, ClickHistory, RefundRequest,
+    Notification
 )
 
 
@@ -151,3 +152,12 @@ class RefundRequestAdmin(admin.ModelAdmin):
     search_fields = ('orderItemID__orderID__orderID', 'orderItemID__productID__productName')
     list_filter = ('status', 'requestDate', 'responseDate')
     readonly_fields = ('requestDate', 'responseDate')
+
+
+# ======================= NOTIFICATION ADMIN =======================
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('notificationID', 'notificationType', 'customerID', 'vendorID', 'title', 'isRead', 'createdTime')
+    list_filter = ('notificationType', 'isRead', 'createdTime')
+    search_fields = ('title', 'message')
+    readonly_fields = ('createdTime',)

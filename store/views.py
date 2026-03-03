@@ -13,7 +13,7 @@ import json
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
     OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia, RefundRequest,
-    CancelledItem
+    CancelledItem, Notification
 )
 
 
@@ -581,6 +581,20 @@ def checkout(request):
             # Clear cart
             cart_items.delete()
 
+            # Notify vendors about the new order
+            vendor_ids_seen = set()
+            for data in order_data:
+                vid = data['cart_item'].productID.storeID.vendorID_id
+                if vid not in vendor_ids_seen:
+                    vendor_ids_seen.add(vid)
+                    Notification.objects.create(
+                        vendorID_id=vid,
+                        notificationType='new_order',
+                        title='New Order Received',
+                        message=f'Order #{order.orderID} has been placed by {customer.firstName} {customer.lastName}.',
+                        link=f'/vendor/orders/'
+                    )
+
             messages.success(request, f"Order created successfully! Order ID: {order.orderID}")
             return redirect('order_detail', order_id=order.orderID)
 
@@ -748,6 +762,17 @@ def request_refund(request, order_item_id):
             return JsonResponse({'error': 'Please provide a reason'}, status=400)
 
         RefundRequest.objects.create(orderItemID=order_item, reason=reason)
+
+        # Notify the vendor about the refund request
+        vendor = order_item.productID.storeID.vendorID
+        Notification.objects.create(
+            vendorID=vendor,
+            notificationType='refund_request',
+            title='Refund Request Received',
+            message=f'{customer.firstName} {customer.lastName} requested a refund for "{order_item.productID.productName}".',
+            link='/vendor/orders/'
+        )
+
         return JsonResponse({'success': True, 'message': 'Refund request submitted successfully'})
     except Customer.DoesNotExist:
         return JsonResponse({'error': 'Customer not found'}, status=400)
@@ -1324,7 +1349,25 @@ def add_promotion(request, product_id):
             endDate=end_dt,
             status='active'
         )
-        
+
+        # If promotion is already active, notify wishlist customers
+        if promotion.is_active():
+            wishlist_customer_ids = WishlistItem.objects.filter(
+                productID=product
+            ).values_list('customerID_id', flat=True)
+            notifications = [
+                Notification(
+                    customerID_id=cid,
+                    notificationType='wishlist_promo',
+                    title='Wishlist Item On Sale!',
+                    message=f'"{product.productName}" is now {discount_rate}% off!',
+                    link=f'/products/{product.productID}/'
+                )
+                for cid in wishlist_customer_ids
+            ]
+            if notifications:
+                Notification.objects.bulk_create(notifications)
+
         return JsonResponse({
             'success': True,
             'message': 'Promotion added successfully',
@@ -1379,7 +1422,26 @@ def toggle_promotion_status(request, promotion_id):
         # Toggle between active and inactive
         promotion.status = 'inactive' if promotion.status == 'active' else 'active'
         promotion.save()
-        
+
+        # If promotion just became active, notify customers who have this product wishlisted
+        if promotion.status == 'active' and promotion.is_active():
+            product = promotion.productID
+            wishlist_customer_ids = WishlistItem.objects.filter(
+                productID=product
+            ).values_list('customerID_id', flat=True)
+            notifications = [
+                Notification(
+                    customerID_id=cid,
+                    notificationType='wishlist_promo',
+                    title='Wishlist Item On Sale!',
+                    message=f'"{product.productName}" is now {promotion.discountRate}% off!',
+                    link=f'/products/{product.productID}/'
+                )
+                for cid in wishlist_customer_ids
+            ]
+            if notifications:
+                Notification.objects.bulk_create(notifications)
+
         return JsonResponse({
             'success': True,
             'message': f'Promotion {promotion.status}',
@@ -1420,6 +1482,18 @@ def respond_refund(request, refund_id):
             message = 'Refund approved and item cancelled'
         else:
             message = 'Refund request rejected'
+
+        # Notify the customer about the refund decision
+        customer = refund.orderItemID.orderID.customerID
+        status_word = 'approved' if action == 'approve' else 'rejected'
+        note_text = f' Note: "{vendor_note}"' if vendor_note else ''
+        Notification.objects.create(
+            customerID=customer,
+            notificationType='refund_response',
+            title=f'Refund {status_word.title()}',
+            message=f'Your refund request for "{refund.orderItemID.productID.productName}" has been {status_word}.{note_text}',
+            link=f'/orders/{refund.orderItemID.orderID.orderID}/'
+        )
 
         return JsonResponse({'success': True, 'message': message})
     except Vendor.DoesNotExist:
@@ -1511,7 +1585,17 @@ def update_order_status(request, order_item_id):
             orderItemID=order_item,
             status=new_status
         )
-        
+
+        # Notify the customer about the status change
+        customer = order_item.orderID.customerID
+        Notification.objects.create(
+            customerID=customer,
+            notificationType='order_status',
+            title=f'Order Status: {new_status}',
+            message=f'Your order item "{order_item.productID.productName}" status changed to {new_status}.',
+            link=f'/orders/{order_item.orderID.orderID}/'
+        )
+
         return JsonResponse({
             'success': True,
             'message': f'Status updated to {new_status}',
@@ -1522,4 +1606,74 @@ def update_order_status(request, order_item_id):
         return JsonResponse({'error': 'Vendor not found'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+# ======================= NOTIFICATION VIEWS =======================
+
+def notifications_page(request):
+    """Display notification list for the logged-in customer or vendor."""
+    if request.session.get('user_type') == 'customer' and 'customer_id' in request.session:
+        notifs = Notification.objects.filter(customerID_id=request.session['customer_id'])
+    elif request.session.get('user_type') == 'vendor' and 'vendor_id' in request.session:
+        notifs = Notification.objects.filter(vendorID_id=request.session['vendor_id'])
+    else:
+        messages.error(request, 'Please log in to view notifications.')
+        return redirect('home')
+
+    return render(request, 'store/notifications.html', {'notifications': notifs})
+
+
+def notifications_json(request):
+    """Return recent notifications as JSON for the dropdown."""
+    from django.utils.timesince import timesince
+    user_type = request.session.get('user_type')
+    if user_type == 'customer' and request.session.get('customer_id'):
+        qs = Notification.objects.filter(customerID_id=request.session['customer_id'])
+    elif user_type == 'vendor' and request.session.get('vendor_id'):
+        qs = Notification.objects.filter(vendorID_id=request.session['vendor_id'])
+    else:
+        return JsonResponse({'notifications': [], 'unread': 0})
+
+    notifs = qs.order_by('-createdTime')[:20]
+    data = []
+    for n in notifs:
+        data.append({
+            'id': n.notificationID,
+            'type': n.notificationType,
+            'title': n.title,
+            'message': n.message,
+            'link': n.link,
+            'is_read': n.isRead,
+            'time_ago': timesince(n.createdTime) + ' ago',
+        })
+    unread = qs.filter(isRead=False).count()
+    return JsonResponse({'notifications': data, 'unread': unread})
+
+
+@require_POST
+def mark_notification_read(request, notification_id):
+    """Mark a single notification as read (AJAX)."""
+    notif = get_object_or_404(Notification, notificationID=notification_id)
+    # Verify ownership
+    cid = request.session.get('customer_id')
+    vid = request.session.get('vendor_id')
+    if not ((notif.customerID_id and notif.customerID_id == cid) or
+            (notif.vendorID_id and notif.vendorID_id == vid)):
+        return JsonResponse({'error': 'Not authorized'}, status=403)
+
+    notif.isRead = True
+    notif.save()
+    return JsonResponse({'success': True})
+
+
+@require_POST
+def mark_all_notifications_read(request):
+    """Mark all notifications as read for the logged-in user."""
+    if request.session.get('user_type') == 'customer' and 'customer_id' in request.session:
+        Notification.objects.filter(customerID_id=request.session['customer_id'], isRead=False).update(isRead=True)
+    elif request.session.get('user_type') == 'vendor' and 'vendor_id' in request.session:
+        Notification.objects.filter(vendorID_id=request.session['vendor_id'], isRead=False).update(isRead=True)
+    else:
+        return JsonResponse({'error': 'Not logged in'}, status=401)
+    return JsonResponse({'success': True})
 

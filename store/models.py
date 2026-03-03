@@ -390,3 +390,40 @@ class RefundRequest(models.Model):
 
     def __str__(self):
         return f"Refund Request #{self.refundRequestID} - {self.status}"
+
+
+# ======================= NOTIFICATION MODEL =======================
+class Notification(models.Model):
+    """
+    Stores notifications for both customers and vendors.
+    Only one of customerID / vendorID should be set per row.
+    """
+    TYPE_CHOICES = [
+        ('new_order', 'New Order Placed'),
+        ('refund_request', 'Refund Request Submitted'),
+        ('wishlist_promo', 'Wishlist Item On Sale'),
+        ('order_status', 'Order Status Changed'),
+        ('refund_response', 'Refund Response'),
+    ]
+
+    notificationID = models.AutoField(primary_key=True)
+    customerID = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications'
+    )
+    vendorID = models.ForeignKey(
+        Vendor, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications'
+    )
+    notificationType = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    link = models.CharField(max_length=255, blank=True)
+    isRead = models.BooleanField(default=False)
+    createdTime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notification'
+        ordering = ['-createdTime']
+
+    def __str__(self):
+        recipient = self.customerID or self.vendorID
+        return f"Notification #{self.notificationID} → {recipient}: {self.title}"

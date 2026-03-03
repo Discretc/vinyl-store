@@ -63,4 +63,10 @@ urlpatterns = [
     path('vendor/upload-profile/', views.upload_vendor_profile, name='upload_vendor_profile'),
     path('vendor/shop/upload-photo/', views.upload_store_photo, name='upload_store_photo'),
     path('vendor/shop/photo/<int:photo_id>/delete/', views.delete_store_photo, name='delete_store_photo'),
+
+    # Notifications
+    path('notifications/', views.notifications_page, name='notifications_page'),
+    path('notifications/json/', views.notifications_json, name='notifications_json'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 ]

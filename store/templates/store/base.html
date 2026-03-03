@@ -12,18 +12,52 @@
     <nav class="navbar">
         <div class="nav-container">
             <a href="{% url 'home' %}" class="nav-logo"><span class="logo-emoji">💽</span> VinylTage</a>
+            {% if request.session.user_type == 'customer' or request.session.user_type == 'vendor' %}
+            <div class="nav-right-controls">
+                <div class="notif-dropdown-wrap">
+                    <button type="button" class="nav-icon-btn notif-bell-btn" title="Notifications" aria-expanded="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="24" height="24" style="width:24px;height:24px;flex-shrink:0;" fill="currentColor">
+                            <path d="M128 28a12 12 0 0 0-12 12v4.67A68.07 68.07 0 0 0 60 112v34.92L44.38 173.3A12 12 0 0 0 54 192h148a12 12 0 0 0 9.63-18.7L196 146.92V112a68.07 68.07 0 0 0-56-66.93V40a12 12 0 0 0-12-12ZM96 212a32 32 0 0 0 64 0Z"/>
+                        </svg>
+                        {% if unread_notif_count %}<span class="cart-badge notif-badge">{{ unread_notif_count }}</span>{% endif %}
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dd-header">
+                            <span class="notif-dd-title">Notifications</span>
+                            <button type="button" class="notif-dd-mark-all" id="notifMarkAll">Mark all read</button>
+                        </div>
+                        <div class="notif-dd-body" id="notifBody">
+                            <div class="notif-dd-empty">No notifications</div>
+                        </div>
+                        <a href="{% url 'notifications_page' %}" class="notif-dd-footer">View all</a>
+                    </div>
+                </div>
+                <button class="nav-hamburger" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+            {% else %}
             <button class="nav-hamburger" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
                 <span></span><span></span><span></span>
             </button>
+            {% endif %}
             <ul class="nav-menu" id="navMenu">
                 <li><a href="{% url 'product_list' %}" class="nav-link{% if request.resolver_match.url_name == 'product_list' %} active{% endif %}">Browse</a></li>
                 {% if request.session.user_type == 'customer' %}
-                    <li><a href="{% url 'view_cart' %}" class="nav-link{% if request.resolver_match.url_name == 'view_cart' %} active{% endif %}">Cart</a></li>
                     <li><a href="{% url 'view_wishlist' %}" class="nav-link{% if request.resolver_match.url_name == 'view_wishlist' %} active{% endif %}">Wishlist</a></li>
                     <li><a href="{% url 'view_click_history' %}" class="nav-link{% if request.resolver_match.url_name == 'view_click_history' %} active{% endif %}">History</a></li>
                     <li><a href="{% url 'order_history' %}" class="nav-link{% if request.resolver_match.url_name == 'order_history' %} active{% endif %}">Orders</a></li>
-                    <li>
-                        <a href="{% url 'customer_profile' %}" class="nav-avatar-btn{% if request.resolver_match.url_name == 'customer_profile' %} active{% endif %}" title="My Profile">
+                    <li class="nav-icon-group">
+                        <a href="{% url 'view_cart' %}" class="nav-icon-btn{% if request.resolver_match.url_name == 'view_cart' %} active{% endif %}" title="Cart">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" style="width:24px;height:24px;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M80 176l48 272h256l48-272H80z"/>
+                                <path d="M48 80h37.6l22.4 96"/>
+                                <circle cx="208" cy="480" r="24" fill="currentColor" stroke="none"/>
+                                <circle cx="336" cy="480" r="24" fill="currentColor" stroke="none"/>
+                            </svg>
+                            {% if cart_item_count %}<span class="cart-badge">{{ cart_item_count }}</span>{% endif %}
+                        </a>
+                        <a href="{% url 'customer_profile' %}" class="nav-icon-btn{% if request.resolver_match.url_name == 'customer_profile' %} active{% endif %}" title="My Profile">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26" style="width:26px;height:26px;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="7" r="4"/>
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -123,6 +157,159 @@
                 });
             });
         }
+
+        // ===================== Notification Dropdown =====================
+        (function() {
+            const ICON_MAP = {
+                'new_order': '📦',
+                'refund_request': '🔄',
+                'wishlist_promo': '🏷️',
+                'order_status': '📋',
+                'refund_response': '✉️',
+            };
+
+            document.querySelectorAll('.notif-bell-btn').forEach(bellBtn => {
+                const wrap = bellBtn.closest('.notif-dropdown-wrap');
+                const dropdown = wrap.querySelector('.notif-dropdown');
+                const body = dropdown.querySelector('.notif-dd-body');
+                const markAllBtn = dropdown.querySelector('.notif-dd-mark-all');
+                let loaded = false;
+
+                function renderItems(data) {
+                    if (!data.notifications.length) {
+                        body.innerHTML = '<div class="notif-dd-empty">No notifications</div>';
+                        return;
+                    }
+                    body.innerHTML = data.notifications.map(n => {
+                        const icon = ICON_MAP[n.type] || '🔔';
+                        const cls = n.is_read ? '' : ' unread';
+                        const tag = n.link ? 'a' : 'div';
+                        const href = n.link ? ` href="${n.link}"` : '';
+                        return `<${tag}${href} class="notif-dd-item${cls}" data-nid="${n.id}">
+                            <span class="notif-dd-icon">${icon}</span>
+                            <div class="notif-dd-content">
+                                <div class="notif-title">${n.title}</div>
+                                <div class="notif-message">${n.message}</div>
+                                <div class="notif-time">${n.time_ago}</div>
+                            </div>
+                        </${tag}>`;
+                    }).join('');
+
+                    // Clicking an unread item marks it read
+                    body.querySelectorAll('.notif-dd-item.unread').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const nid = item.dataset.nid;
+                            fetch(`/notifications/${nid}/read/`, {
+                                method: 'POST',
+                                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+                            });
+                            item.classList.remove('unread');
+                            updateBadge(-1);
+                        });
+                    });
+                }
+
+                function updateBadge(delta) {
+                    let badge = bellBtn.querySelector('.notif-badge');
+                    if (!badge && delta > 0) {
+                        badge = document.createElement('span');
+                        badge.className = 'cart-badge notif-badge';
+                        bellBtn.appendChild(badge);
+                    }
+                    if (badge) {
+                        let c = parseInt(badge.textContent || '0') + delta;
+                        if (c <= 0) badge.remove();
+                        else badge.textContent = c;
+                    }
+                }
+
+                function fetchAndRender() {
+                    fetch('/notifications/json/')
+                        .then(r => r.json())
+                        .then(data => {
+                            renderItems(data);
+                            loaded = true;
+                            // Sync badge
+                            let badge = bellBtn.querySelector('.notif-badge');
+                            if (data.unread > 0) {
+                                if (!badge) {
+                                    badge = document.createElement('span');
+                                    badge.className = 'cart-badge notif-badge';
+                                    bellBtn.appendChild(badge);
+                                }
+                                badge.textContent = data.unread;
+                            } else if (badge) {
+                                badge.remove();
+                            }
+                        });
+                }
+
+                bellBtn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const isOpen = dropdown.classList.toggle('is-open');
+                    bellBtn.setAttribute('aria-expanded', isOpen);
+                    if (isOpen) {
+                        // Close any other open dropdowns
+                        document.querySelectorAll('.notif-dropdown.is-open').forEach(d => {
+                            if (d !== dropdown) d.classList.remove('is-open');
+                        });
+                        fetchAndRender();
+                        // Show backdrop on mobile
+                        showBackdrop(true);
+                    } else {
+                        showBackdrop(false);
+                    }
+                });
+
+                if (markAllBtn) {
+                    markAllBtn.addEventListener('click', e => {
+                        e.stopPropagation();
+                        fetch('/notifications/mark-all-read/', {
+                            method: 'POST',
+                            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+                        }).then(r => r.json()).then(data => {
+                            if (data.success) {
+                                body.querySelectorAll('.notif-dd-item.unread').forEach(el => el.classList.remove('unread'));
+                                const badge = bellBtn.querySelector('.notif-badge');
+                                if (badge) badge.remove();
+                            }
+                        });
+                    });
+                }
+
+                dropdown.addEventListener('click', e => e.stopPropagation());
+            });
+
+            // Close dropdown on outside click
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.notif-dropdown.is-open').forEach(d => {
+                    d.classList.remove('is-open');
+                    d.closest('.notif-dropdown-wrap').querySelector('.notif-bell-btn').setAttribute('aria-expanded', 'false');
+                });
+                showBackdrop(false);
+            });
+
+            // Backdrop for mobile
+            let backdrop = null;
+            function showBackdrop(show) {
+                if (window.innerWidth > 768) return;
+                if (show) {
+                    if (!backdrop) {
+                        backdrop = document.createElement('div');
+                        backdrop.className = 'notif-backdrop';
+                        backdrop.addEventListener('click', () => {
+                            document.querySelectorAll('.notif-dropdown.is-open').forEach(d => d.classList.remove('is-open'));
+                            showBackdrop(false);
+                        });
+                    }
+                    document.body.appendChild(backdrop);
+                    requestAnimationFrame(() => backdrop.classList.add('visible'));
+                } else if (backdrop && backdrop.parentNode) {
+                    backdrop.classList.remove('visible');
+                    setTimeout(() => { if (backdrop.parentNode) backdrop.remove(); }, 200);
+                }
+            }
+        })();
     </script>
 </body>
 </html>
