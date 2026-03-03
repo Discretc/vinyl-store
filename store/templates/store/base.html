@@ -13,8 +13,8 @@
         <div class="nav-container">
             <a href="{% url 'home' %}" class="nav-logo"><span class="logo-emoji">💽</span> VinylTage</a>
             {% if request.session.user_type == 'customer' or request.session.user_type == 'vendor' %}
-            <div class="nav-right-controls">
-                <div class="notif-dropdown-wrap">
+            <div class="notif-mobile-wrap">
+                <div class="notif-dropdown-wrap notif-mobile">
                     <button type="button" class="nav-icon-btn notif-bell-btn" title="Notifications" aria-expanded="false">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="24" height="24" style="width:24px;height:24px;flex-shrink:0;" fill="currentColor">
                             <path d="M128 28a12 12 0 0 0-12 12v4.67A68.07 68.07 0 0 0 60 112v34.92L44.38 173.3A12 12 0 0 0 54 192h148a12 12 0 0 0 9.63-18.7L196 146.92V112a68.07 68.07 0 0 0-56-66.93V40a12 12 0 0 0-12-12ZM96 212a32 32 0 0 0 64 0Z"/>
@@ -63,10 +63,48 @@
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                             </svg>
                         </a>
+                        <div class="notif-dropdown-wrap notif-desktop">
+                            <button type="button" class="nav-icon-btn notif-bell-btn" title="Notifications" aria-expanded="false">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="24" height="24" style="width:24px;height:24px;flex-shrink:0;" fill="currentColor">
+                                    <path d="M128 28a12 12 0 0 0-12 12v4.67A68.07 68.07 0 0 0 60 112v34.92L44.38 173.3A12 12 0 0 0 54 192h148a12 12 0 0 0 9.63-18.7L196 146.92V112a68.07 68.07 0 0 0-56-66.93V40a12 12 0 0 0-12-12ZM96 212a32 32 0 0 0 64 0Z"/>
+                                </svg>
+                                {% if unread_notif_count %}<span class="cart-badge notif-badge">{{ unread_notif_count }}</span>{% endif %}
+                            </button>
+                            <div class="notif-dropdown" id="notifDropdownDesktop">
+                                <div class="notif-dd-header">
+                                    <span class="notif-dd-title">Notifications</span>
+                                    <button type="button" class="notif-dd-mark-all" id="notifMarkAllDesktop">Mark all read</button>
+                                </div>
+                                <div class="notif-dd-body" id="notifBodyDesktop">
+                                    <div class="notif-dd-empty">No notifications</div>
+                                </div>
+                                <a href="{% url 'notifications_page' %}" class="notif-dd-footer">View all</a>
+                            </div>
+                        </div>
                     </li>
                     <li><a href="{% url 'logout' %}" class="nav-link logout-link">Logout ({{ request.session.customer_name }})</a></li>
                 {% elif request.session.user_type == 'vendor' %}
                     <li><a href="{% url 'vendor_dashboard' %}" class="nav-link{% if request.resolver_match.url_name == 'vendor_dashboard' %} active{% endif %}">Dashboard</a></li>
+                    <li class="notif-menu-item">
+                        <div class="notif-dropdown-wrap notif-desktop">
+                            <button type="button" class="nav-icon-btn notif-bell-btn" title="Notifications" aria-expanded="false">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="24" height="24" style="width:24px;height:24px;flex-shrink:0;" fill="currentColor">
+                                    <path d="M128 28a12 12 0 0 0-12 12v4.67A68.07 68.07 0 0 0 60 112v34.92L44.38 173.3A12 12 0 0 0 54 192h148a12 12 0 0 0 9.63-18.7L196 146.92V112a68.07 68.07 0 0 0-56-66.93V40a12 12 0 0 0-12-12ZM96 212a32 32 0 0 0 64 0Z"/>
+                                </svg>
+                                {% if unread_notif_count %}<span class="cart-badge notif-badge">{{ unread_notif_count }}</span>{% endif %}
+                            </button>
+                            <div class="notif-dropdown" id="notifDropdownDesktop">
+                                <div class="notif-dd-header">
+                                    <span class="notif-dd-title">Notifications</span>
+                                    <button type="button" class="notif-dd-mark-all" id="notifMarkAllDesktop">Mark all read</button>
+                                </div>
+                                <div class="notif-dd-body" id="notifBodyDesktop">
+                                    <div class="notif-dd-empty">No notifications</div>
+                                </div>
+                                <a href="{% url 'notifications_page' %}" class="notif-dd-footer">View all</a>
+                            </div>
+                        </div>
+                    </li>
                     <li><a href="{% url 'logout' %}" class="nav-link logout-link">Logout ({{ request.session.vendor_name }})</a></li>
                 {% else %}
                     <li><a href="{% url 'customer_register' %}" class="nav-link{% if request.resolver_match.url_name == 'customer_register' %} active{% endif %}">Customer Sign Up</a></li>

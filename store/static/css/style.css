@@ -105,11 +105,24 @@ button:hover {
     opacity: 0.7;
 }
 
-.nav-right-controls {
-    display: contents;
+.notif-menu-item {
+    display: flex;
+    align-items: center;
 }
-.nav-right-controls .notif-dropdown-wrap {
-    order: 10;
+
+/* Mobile bell+hamburger wrapper — hidden on desktop */
+.notif-mobile-wrap {
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+}
+/* Desktop bell — visible on desktop, hidden on mobile */
+.notif-desktop {
+    display: flex;
+}
+/* Mobile bell — hidden on desktop, controlled by media query */
+.notif-mobile {
+    display: none;
 }
 
 .nav-menu {
@@ -1317,22 +1330,25 @@ textarea {
         display: flex;
     }
 
-    .nav-right-controls * {
-        /* border: 1px solid red; */
-    }
-    
-    .nav-right-controls {
+    /* Show mobile bell+hamburger wrapper, hide desktop bell */
+    .notif-mobile-wrap {
         display: flex;
-        flex-direction: row-reverse;
-        align-items: center;
-        gap: 0.25rem;
     }
-    .nav-right-controls .notif-dropdown-wrap {
+    .notif-mobile {
+        display: flex;
         position: relative;
     }
-    .nav-right-controls .notif-bell-btn {
+    .notif-mobile .notif-bell-btn {
         opacity: 0.6;
     }
+    .notif-desktop {
+        display: none !important;
+    }
+    /* Hide the vendor notif-menu-item on mobile (using mobile bell instead) */
+    .notif-menu-item {
+        display: none;
+    }
+
     .nav-menu {
         display: none;
         position: absolute;
