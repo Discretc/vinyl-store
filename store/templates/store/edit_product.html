@@ -8,6 +8,12 @@
 <div class="container" style="max-width: 800px; margin-top: 2rem;">
     <h2 class="page-title">Edit Product</h2>
     
+    {% if wishlist_count > 0 %}
+    <div style="background: #fef3c7; border-radius: 4px; padding: 0.6rem 1rem; margin-bottom: 1.25rem; font-size: 0.88rem; color: #92400e;">
+        ♡ <strong>{{ wishlist_count }}</strong> customer{{ wishlist_count|pluralize }} ha{{ wishlist_count|pluralize:"s,ve" }} this product in their wishlist — consider creating a promotion to encourage purchases!
+    </div>
+    {% endif %}
+    
     <form method="post">
         {% csrf_token %}
         <div class="form-group">

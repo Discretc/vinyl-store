@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q, Avg, Sum
+from django.db.models import Q, Avg, Sum, Count
 from django.views.decorators.http import require_POST, require_GET
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
@@ -13,8 +13,16 @@ import json
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
     OrderStatus, Review, WishlistItem, Promotion, ClickHistory, StoreMedia, RefundRequest,
-    CancelledItem, Notification
+    CancelledItem, Notification, SearchQuery
 )
+
+
+def _expire_past_promotions():
+    """Auto-expire promotions whose endDate has passed but status is still 'active'."""
+    Promotion.objects.filter(
+        status='active',
+        endDate__lt=timezone.now()
+    ).update(status='expired')
 
 
 # ======================= HELPERS =======================
@@ -195,6 +203,7 @@ def logout(request):
 
 def home(request):
     """Home page with featured products."""
+    _expire_past_promotions()
     all_products = list(
         Product.objects.filter(availability=True)
         .select_related('storeID')
@@ -226,6 +235,7 @@ def home(request):
 
 def product_list(request):
     """Display all products with search and filtering."""
+    _expire_past_promotions()
     products = Product.objects.filter(availability=True).select_related('storeID').prefetch_related('promotions').annotate(
         avg_rating=Avg('reviews__rating')
     )
@@ -236,6 +246,18 @@ def product_list(request):
         products = products.filter(
             Q(productName__icontains=search_query) |
             Q(description__icontains=search_query)
+        )
+        # Log search query for analytics
+        customer = None
+        if 'customer_id' in request.session:
+            try:
+                customer = Customer.objects.get(customerID=request.session['customer_id'])
+            except Customer.DoesNotExist:
+                pass
+        SearchQuery.objects.create(
+            customerID=customer,
+            query=search_query,
+            resultCount=products.count()
         )
 
     # Filter by store
@@ -265,11 +287,18 @@ def product_list(request):
             product.discount_percent = 0
             product.has_discount = False
 
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(products, 9)  # 9 products per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     # Get all stores for filter dropdown
     stores = Store.objects.all()
 
     context = {
-        'products': products,
+        'products': page_obj,
+        'page_obj': page_obj,
         'stores': stores,
         'search_query': search_query,
     }
@@ -278,6 +307,7 @@ def product_list(request):
 
 def shop_detail(request, store_id):
     """Public shop page — store info, gallery, and searchable product listing."""
+    _expire_past_promotions()
     store = get_object_or_404(Store, storeID=store_id)
     search_query = request.GET.get('search', '').strip()
 
@@ -291,6 +321,18 @@ def shop_detail(request, store_id):
         products = products.filter(
             Q(productName__icontains=search_query) |
             Q(description__icontains=search_query)
+        )
+        # Log search query for analytics
+        customer = None
+        if 'customer_id' in request.session:
+            try:
+                customer = Customer.objects.get(customerID=request.session['customer_id'])
+            except Customer.DoesNotExist:
+                pass
+        SearchQuery.objects.create(
+            customerID=customer,
+            query=search_query,
+            resultCount=products.count()
         )
 
     for product in products:
@@ -318,6 +360,7 @@ def shop_detail(request, store_id):
 
 def product_detail(request, product_id):
     """Display product details, reviews, and promotions."""
+    _expire_past_promotions()
     product = get_object_or_404(Product, productID=product_id)
 
     # Record click history if customer is logged in
@@ -430,7 +473,8 @@ def view_cart(request):
 
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
-        cart_items = CartItem.objects.filter(customerID=customer).select_related('productID')
+        cart_items = CartItem.objects.filter(customerID=customer).select_related('productID').prefetch_related('productID__promotions')
+        _expire_past_promotions()
         
         total_price = Decimal('0.00')
         for item in cart_items:
@@ -509,17 +553,29 @@ def update_cart_item(request, cart_item_id):
 # ======================= ORDER VIEWS =======================
 
 def checkout(request):
-    """Checkout page."""
+    """Checkout page — only selected cart items are checked out."""
+    _expire_past_promotions()
     if 'customer_id' not in request.session:
         messages.error(request, "Please log in to checkout.")
         return redirect('customer_login')
 
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
-        cart_items = CartItem.objects.filter(customerID=customer).select_related('productID')
+
+        # Get selected item IDs from query string (GET) or form (POST)
+        selected_ids = request.GET.getlist('items') or request.POST.getlist('items')
+        selected_ids = [int(i) for i in selected_ids if i.isdigit()]
+
+        if not selected_ids:
+            messages.error(request, "No items selected for checkout.")
+            return redirect('view_cart')
+
+        cart_items = CartItem.objects.filter(
+            customerID=customer, pk__in=selected_ids
+        ).select_related('productID').prefetch_related('productID__promotions')
 
         if not cart_items.exists():
-            messages.error(request, "Your cart is empty.")
+            messages.error(request, "Selected items not found in your cart.")
             return redirect('view_cart')
 
         # Calculate total
@@ -550,6 +606,7 @@ def checkout(request):
                     'cart_items': order_data,
                     'total_amount': total_amount,
                     'customer': customer,
+                    'selected_ids': selected_ids,
                 })
 
             # Create order
@@ -578,7 +635,7 @@ def checkout(request):
                 item.productID.stockQuantity -= item.quantity
                 item.productID.save()
 
-            # Clear cart
+            # Only delete the checked-out items from cart; unselected items remain
             cart_items.delete()
 
             # Notify vendors about the new order
@@ -602,12 +659,38 @@ def checkout(request):
             'cart_items': order_data,
             'total_amount': total_amount,
             'customer': customer,
+            'selected_ids': selected_ids,
         }
         return render(request, 'store/checkout.html', context)
 
     except Customer.DoesNotExist:
         messages.error(request, "User not found.")
         return redirect('customer_login')
+
+
+def _get_order_aggregate_status(order):
+    """Compute an aggregate display status for an order with multiple items.
+    Priority (worst-case shown): Processing > Holding > Shipping > Completed.
+    If ANY item is Cancelled and others are not, show the non-cancelled worst status.
+    If ALL items are Cancelled, show Cancelled.
+    """
+    priority = {'Processing': 0, 'Holding': 1, 'Shipping': 2, 'Completed': 3, 'Cancelled': 4}
+    worst = None
+    all_cancelled = True
+    for item in order.items.all():
+        latest = item.statuses.order_by('-updatedDate').first()
+        if not latest:
+            continue
+        s = latest.status
+        if s != 'Cancelled':
+            all_cancelled = False
+        if s == 'Cancelled':
+            continue  # skip cancelled when computing worst non-cancelled
+        if worst is None or priority.get(s, 99) < priority.get(worst, 99):
+            worst = s
+    if all_cancelled:
+        return 'Cancelled'
+    return worst or 'Processing'
 
 
 def order_detail(request, order_id):
@@ -624,13 +707,19 @@ def order_detail(request, order_id):
         # Add subtotal and cancellable flag to each order item
         for item in order_items:
             item.subtotal = item.paidPrice * item.quantity
-            latest_status = item.statuses.last()
+            latest_status = item.statuses.order_by('-updatedDate').first()
+            item.latest_status_obj = latest_status
             # Item can be cancelled if status is Processing or Holding
             item.can_cancel = latest_status and latest_status.status in ['Processing', 'Holding']
             # Item can request refund if Shipping or Completed
             item.can_request_refund = latest_status and latest_status.status in ['Shipping', 'Completed']
             # Check for existing pending refund
             item.has_pending_refund = item.refund_requests.filter(status='pending').exists()
+            # Full status history for timeline
+            item.status_history = item.statuses.order_by('updatedDate')
+
+        # Aggregate order-level status
+        order.aggregate_status = _get_order_aggregate_status(order)
 
         context = {
             'order': order,
@@ -650,21 +739,20 @@ def order_history(request):
 
     try:
         customer = Customer.objects.get(customerID=request.session['customer_id'])
-        orders = customer.orders.all().prefetch_related('items__statuses').order_by('-orderDate')
-        
+        orders = list(
+            customer.orders.all()
+            .prefetch_related('items__statuses')
+            .order_by('-orderDate')
+        )
+
+        # Compute aggregate status for each order
+        for order in orders:
+            order.aggregate_status = _get_order_aggregate_status(order)
+
         # Filter by status if provided
         status_filter = request.GET.get('status', '').strip()
         if status_filter:
-            # Filter orders that have at least one item with the selected status
-            filtered_orders = []
-            for order in orders:
-                # Check if any item in the order has the selected status
-                for item in order.items.all():
-                    latest_status = item.statuses.last()
-                    if latest_status and latest_status.status == status_filter:
-                        filtered_orders.append(order)
-                        break  # Found a match, move to next order
-            orders = filtered_orders
+            orders = [o for o in orders if o.aggregate_status == status_filter]
         
         # Get available status choices for the filter dropdown
         from store.models import OrderStatus
@@ -899,6 +987,7 @@ def toggle_wishlist(request, product_id):
 
 def view_wishlist(request):
     """View customer's wishlist."""
+    _expire_past_promotions()
     if 'customer_id' not in request.session:
         messages.error(request, "Please log in to view your wishlist.")
         return redirect('customer_login')
@@ -919,8 +1008,14 @@ def view_wishlist(request):
             )
             item.active_promo = active_promo
             item.has_active_promo = active_promo is not None
-            # Use live discount rate if there's an active promo, else fall back to stored rate
-            item.sort_discount = active_promo.discountRate if active_promo else item.discountRate
+            # Compute live discounted price from current product price & active promo
+            if active_promo:
+                discount_amount = active_promo.get_discount_amount(item.productID.price)
+                item.live_discounted_price = item.productID.price - discount_amount
+            else:
+                item.live_discounted_price = item.productID.price
+            # Sort discount: use live rate if active promo, else 0 (no discount)
+            item.sort_discount = float(active_promo.discountRate) if active_promo else 0
 
         wishlist_items.sort(key=lambda x: (
             x.sort_discount <= 0,
@@ -1014,7 +1109,22 @@ def vendor_dashboard(request):
     try:
         vendor = Vendor.objects.get(vendorID=request.session['vendor_id'])
         store = vendor.store
-        products = store.products.all()
+        products = store.products.all().annotate(
+            wishlist_count=Count('wishlistitem')
+        )
+
+        # Vendor product search
+        vendor_search = request.GET.get('vendor_search', '').strip()
+        if vendor_search:
+            import re
+            id_match = re.match(r'^ID:(\d+)$', vendor_search, re.IGNORECASE)
+            if id_match:
+                products = products.filter(productID=int(id_match.group(1)))
+            else:
+                products = products.filter(
+                    Q(productName__icontains=vendor_search) |
+                    Q(description__icontains=vendor_search)
+                )
         
         # Calculate total sales from orders (excluding cancelled items)
         from django.db.models import F
@@ -1029,13 +1139,39 @@ def vendor_dashboard(request):
             if latest_status and latest_status.status != 'Cancelled':
                 total_sales += item.paidPrice * item.quantity
 
+        # Product insights: most wishlisted products
+        top_wishlisted = store.products.annotate(
+            wl_count=Count('wishlistitem')
+        ).filter(wl_count__gt=0).order_by('-wl_count')[:5]
+
+        # Product insights: most viewed products (last 30 days)
+        from datetime import timedelta
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        top_viewed = store.products.filter(
+            clickhistory__viewedDate__gte=thirty_days_ago
+        ).annotate(
+            view_count=Count('clickhistory')
+        ).order_by('-view_count')[:5]
+
+        # Search analytics: top search terms that returned this store's products (last 30 days)
+        store_product_names = list(store.products.values_list('productName', flat=True))
+        recent_searches = SearchQuery.objects.filter(
+            searchedAt__gte=thirty_days_ago
+        ).values('query').annotate(
+            search_count=Count('searchID')
+        ).order_by('-search_count')[:10]
+
         context = {
             'vendor': vendor,
             'store': store,
             'products': products,
-            'total_products': products.count(),
+            'total_products': store.products.count(),
             'total_sales': total_sales,
             'shop_photos': store.shop_photos.all(),
+            'vendor_search': vendor_search,
+            'top_wishlisted': top_wishlisted,
+            'top_viewed': top_viewed,
+            'recent_searches': recent_searches,
         }
         return render(request, 'store/vendor_dashboard.html', context)
     except Vendor.DoesNotExist:
@@ -1145,6 +1281,7 @@ def add_product(request):
 
 def edit_product(request, product_id):
     """Edit product details (vendor only)."""
+    _expire_past_promotions()
     if 'vendor_id' not in request.session:
         messages.error(request, "Please log in as a vendor.")
         return redirect('vendor_login')
@@ -1167,11 +1304,14 @@ def edit_product(request, product_id):
         promotions = product.promotions.all().order_by('-createdTime')
         # Get product images
         media = product.media.all().order_by('sortedOrder')
+        # Wishlist count for this product
+        wishlist_count = WishlistItem.objects.filter(productID=product).count()
         
         context = {
             'product': product,
             'promotions': promotions,
             'media': media,
+            'wishlist_count': wishlist_count,
         }
         return render(request, 'store/edit_product.html', context)
     except Vendor.DoesNotExist:

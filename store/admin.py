@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Customer, Vendor, Store, Product, ProductMedia, CartItem, Order, OrderItem,
     OrderStatus, CancelledItem, WishlistItem, Promotion, Review, ClickHistory, RefundRequest,
-    Notification
+    Notification, SearchQuery
 )
 
 
@@ -161,3 +161,12 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = ('notificationType', 'isRead', 'createdTime')
     search_fields = ('title', 'message')
     readonly_fields = ('createdTime',)
+
+
+# ======================= SEARCH QUERY ADMIN =======================
+@admin.register(SearchQuery)
+class SearchQueryAdmin(admin.ModelAdmin):
+    list_display = ('searchID', 'customerID', 'query', 'resultCount', 'searchedAt')
+    search_fields = ('query', 'customerID__email')
+    list_filter = ('searchedAt',)
+    readonly_fields = ('searchedAt',)

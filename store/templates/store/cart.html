@@ -11,6 +11,7 @@
         <table class="cart-table">
             <thead>
                 <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="select-all" checked title="Select All"></th>
                     <th>Product</th>
                     <th>Price</th>
                     <th>Quantity</th>
@@ -22,6 +23,7 @@
                 {% for item in cart_items %}
                     {% with product=item.productID %}
                         <tr>
+                            <td><input type="checkbox" class="cart-select" value="{{ item.pk }}" checked></td>
                             <td>
                                 <a href="{% url 'product_detail' product.productID %}">{{ product.productName }}</a>
                                 <br><small style="color: #666;">{{ product.storeID.storeName }}</small>
@@ -34,7 +36,7 @@
                                     <button type="submit" class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Update</button>
                                 </form>
                             </td>
-                            <td>${{ item.subtotal_with_promo|floatformat:2 }}</td>
+                            <td class="item-subtotal" data-price="{{ item.subtotal_with_promo }}">${{ item.subtotal_with_promo|floatformat:2 }}</td>
                             <td>
                                 <form method="post" action="{% url 'remove_from_cart' item.pk %}" style="display: inline;">
                                     {% csrf_token %}
@@ -50,23 +52,69 @@
 
         <div class="cart-summary">
             <div class="cart-summary-row">
-                <span>Subtotal:</span>
-                <span>${{ total_price|floatformat:2 }}</span>
+                <span>Selected Subtotal:</span>
+                <span id="selected-total">${{ total_price|floatformat:2 }}</span>
             </div>
             <div class="cart-summary-row">
                 <span>Shipping:</span>
                 <span>FREE</span>
             </div>
             <div class="cart-summary-total">
-                Total: ${{ total_price|floatformat:2 }}
+                Total: <span id="selected-total-bottom">${{ total_price|floatformat:2 }}</span>
             </div>
 
             <div style="margin-top: 2rem; display: flex; gap: 1rem;">
                 <a href="{% url 'product_list' %}" class="btn btn-secondary" style="flex: 1;">Continue Shopping</a>
-                <a href="{% url 'checkout' %}" class="btn btn-primary" style="flex: 1;">Proceed to Checkout</a>
+                <button id="checkout-btn" class="btn btn-primary" style="flex: 1;">Proceed to Checkout</button>
             </div>
         </div>
     </div>
+
+<script>
+(function() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.cart-select');
+    const totalEl = document.getElementById('selected-total');
+    const totalBottomEl = document.getElementById('selected-total-bottom');
+    const checkoutBtn = document.getElementById('checkout-btn');
+
+    function recalcTotal() {
+        let total = 0;
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                const row = cb.closest('tr');
+                const sub = parseFloat(row.querySelector('.item-subtotal').dataset.price);
+                total += sub;
+            }
+        });
+        const formatted = '$' + total.toFixed(2);
+        totalEl.textContent = formatted;
+        totalBottomEl.textContent = formatted;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
+        recalcTotal();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            selectAll.checked = [...checkboxes].every(c => c.checked);
+            recalcTotal();
+        });
+    });
+
+    checkoutBtn.addEventListener('click', function() {
+        const selected = [...checkboxes].filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) {
+            alert('Please select at least one item to checkout.');
+            return;
+        }
+        const params = selected.map(id => 'items=' + id).join('&');
+        window.location.href = '{% url "checkout" %}?' + params;
+    });
+})();
+</script>
 {% else %}
     <div class="empty-state">
         <div class="empty-state-icon">🛒</div>
@@ -75,7 +123,4 @@
         <a href="{% url 'product_list' %}" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
     </div>
 {% endif %}
-
-<!-- Custom filter for template -->
-{% filter upper %}{% endfilter %}
 {% endblock %}

@@ -36,12 +36,8 @@
                         <p style="color: #666;">{{ order.items.count }} item{{ order.items.count|pluralize }}</p>
                     </div>
                 </div>
-                <div style="margin-top: 1rem;">
-                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Status: 
-                        {% with latest=order.items.first.statuses.last %}
-                            <strong>{{ latest.status }}</strong>
-                        {% endwith %}
-                    </p>
+                <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                    <p style="color: {% if order.aggregate_status == 'Completed' %}#16a34a{% elif order.aggregate_status == 'Cancelled' %}#dc2626{% elif order.aggregate_status == 'Shipping' %}#1a1a1a{% elif order.aggregate_status == 'Holding' %}#d97706{% else %}#888{% endif %}; font-size: 0.9rem; font-weight: 600; margin: 0;">{{ order.aggregate_status }}</p>
                     <a href="{% url 'order_detail' order.orderID %}" class="btn btn-primary btn-small">View Details</a>
                 </div>
             </div>

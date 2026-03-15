@@ -427,3 +427,25 @@ class Notification(models.Model):
     def __str__(self):
         recipient = self.customerID or self.vendorID
         return f"Notification #{self.notificationID} → {recipient}: {self.title}"
+
+
+# ======================= SEARCH QUERY MODEL =======================
+class SearchQuery(models.Model):
+    """
+    Logs customer search queries for analytics.
+    Tracks what customers search for to help vendors anticipate demand.
+    """
+    searchID = models.AutoField(primary_key=True)
+    customerID = models.ForeignKey(
+        Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='search_queries'
+    )
+    query = models.CharField(max_length=255)
+    resultCount = models.IntegerField(default=0)
+    searchedAt = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'search_query'
+        ordering = ['-searchedAt']
+
+    def __str__(self):
+        return f"Search: \"{self.query}\" ({self.resultCount} results) at {self.searchedAt}"

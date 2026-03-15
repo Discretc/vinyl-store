@@ -14,10 +14,8 @@
             <h3>Order Information</h3>
             <p><strong>Order ID:</strong> #{{ order.orderID }}</p>
             <p><strong>Date:</strong> {{ order.orderDate|date:"M d, Y H:i" }}</p>
-            <p><strong>Status:</strong> 
-                {% with first_status=order.items.first.statuses.first %}
-                    <span style="background-color: {% if first_status.status == 'Completed' %}var(--success-color){% elif first_status.status == 'Cancelled' %}var(--error-color){% elif first_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px;">{{ first_status.status }}</span>
-                {% endwith %}
+            <p><strong>Overall Status:</strong> 
+                <span style="color: {% if order.aggregate_status == 'Completed' %}#16a34a{% elif order.aggregate_status == 'Cancelled' %}#dc2626{% elif order.aggregate_status == 'Shipping' %}#1a1a1a{% elif order.aggregate_status == 'Holding' %}#d97706{% else %}#888{% endif %}; font-weight: 600;">{{ order.aggregate_status }}</span>
             </p>
         </div>
 
@@ -54,11 +52,25 @@
                     <td>{{ order_item.quantity }}</td>
                     <td>${{ order_item.subtotal|floatformat:2 }}</td>
                     <td>
-                        {% with latest_status=order_item.statuses.last %}
-                            <span style="background-color: {% if latest_status.status == 'Completed' %}var(--success-color){% elif latest_status.status == 'Cancelled' %}var(--error-color){% elif latest_status.status == 'Shipping' %}var(--accent-color){% else %}var(--warning-color){% endif %}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem;">
-                                {{ latest_status.status }}
+                        {% if order_item.latest_status_obj %}
+                            <span style="color: {% if order_item.latest_status_obj.status == 'Completed' %}#16a34a{% elif order_item.latest_status_obj.status == 'Cancelled' %}#dc2626{% elif order_item.latest_status_obj.status == 'Shipping' %}#1a1a1a{% elif order_item.latest_status_obj.status == 'Holding' %}#d97706{% else %}#888{% endif %}; font-weight: 600; font-size: 0.88rem;">
+                                {{ order_item.latest_status_obj.status }}
                             </span>
-                        {% endwith %}
+                        {% endif %}
+                        {% if order_item.status_history.count > 1 %}
+                        <details style="margin-top: 0.4rem;">
+                            <summary style="font-size: 0.75rem; color: #999; cursor: pointer; list-style: none; user-select: none;">View history</summary>
+                            <div style="margin-top: 0.4rem; padding-left: 0.15rem;">
+                                {% for status_entry in order_item.status_history %}
+                                    <div style="display: flex; align-items: baseline; gap: 0.4rem; padding: 0.2rem 0; font-size: 0.78rem;">
+                                        <span style="color: {% if status_entry.status == 'Completed' %}#16a34a{% elif status_entry.status == 'Cancelled' %}#dc2626{% elif status_entry.status == 'Shipping' %}#1a1a1a{% elif status_entry.status == 'Holding' %}#d97706{% else %}#888{% endif %}; font-weight: 600;">{{ status_entry.status }}</span>
+                                        <span style="color: #bbb;">&mdash;</span>
+                                        <span style="color: #999;">{{ status_entry.updatedDate|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </details>
+                        {% endif %}
                     </td>
                     <td>
                         {% if order_item.can_cancel %}

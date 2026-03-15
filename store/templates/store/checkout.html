@@ -11,6 +11,9 @@
         <h3>Shipping Information</h3>
         <form method="post">
             {% csrf_token %}
+            {% for item_id in selected_ids %}
+                <input type="hidden" name="items" value="{{ item_id }}">
+            {% endfor %}
             <div class="form-group">
                 <label>Name:</label>
                 <input type="text" value="{{ customer.firstName }} {{ customer.lastName }}" disabled>

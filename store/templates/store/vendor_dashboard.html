@@ -116,17 +116,79 @@
     </div>
 </div>
 
+<!-- Customer Insights -->
+<div class="vendor-info-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; margin-bottom: 2rem; max-width: 100%;">
+    <div class="container" style="margin: 0;">
+        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">🔍 Trending Searches</h3>
+        <p style="color: #666; font-size: 0.82rem; margin-bottom: 0.75rem;">What customers searched for (last 30 days)</p>
+        {% if recent_searches %}
+            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                {% for s in recent_searches %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem;">
+                        <span style="color: #333;">"{{ s.query }}"</span>
+                        <span style="color: #999; font-size: 0.78rem;">{{ s.search_count }}×</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #999; font-size: 0.85rem;">No search data yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="container" style="margin: 0;">
+        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">♡ Most Wishlisted</h3>
+        <p style="color: #666; font-size: 0.82rem; margin-bottom: 0.75rem;">Products customers are saving for later</p>
+        {% if top_wishlisted %}
+            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                {% for p in top_wishlisted %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem;">
+                        <a href="{% url 'edit_product' p.productID %}" style="color: #333; text-decoration: none;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#333'">{{ p.productName|truncatechars:25 }}</a>
+                        <span style="color: #999; font-size: 0.78rem;">{{ p.wl_count }} ♡</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #999; font-size: 0.85rem;">No wishlisted products yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="container" style="margin: 0;">
+        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Most Viewed</h3>
+        <p style="color: #666; font-size: 0.82rem; margin-bottom: 0.75rem;">Top viewed products (last 30 days)</p>
+        {% if top_viewed %}
+            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                {% for p in top_viewed %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem;">
+                        <a href="{% url 'edit_product' p.productID %}" style="color: #333; text-decoration: none;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#333'">{{ p.productName|truncatechars:25 }}</a>
+                        <span style="color: #999; font-size: 0.78rem;">{{ p.view_count }} views</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #999; font-size: 0.85rem;">No view data yet.</p>
+        {% endif %}
+    </div>
+</div>
+
 <!-- Products List -->
 <div class="container">
-    <h3>Your Products</h3>
+    <div style="margin-bottom: 1.25rem;">
+        <h3 style="margin: 0 0 0.75rem;">Your Products{% if vendor_search %} <span style="font-weight: 400; font-size: 0.85rem; color: #999;">— {{ products|length }} result{{ products|length|pluralize }} for "{{ vendor_search }}"</span>{% endif %}</h3>
+        <form method="get" style="display: flex; justify-content: center; margin: 0;">
+            <input type="text" name="vendor_search" value="{{ vendor_search }}" placeholder="Search by name or ID:(id)"
+                   style="padding: 0.5rem 0.85rem !important; border: 1px solid #ccc !important; border-radius: 6px !important; font-size: 0.88rem !important; width: 100%; max-width: 320px; height: 36px; box-sizing: border-box; margin: 0; outline: none; background: #fff; color: #1a1a1a; text-align: center;">
+        </form>
+    </div>
     {% if products %}
         <div class="cart-table-wrapper">
         <table class="cart-table">
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Product Name</th>
                     <th>Price</th>
                     <th>Stock</th>
+                    <th>♡</th>
                     <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -135,11 +197,13 @@
             <tbody>
                 {% for product in products %}
                     <tr style="{% if not product.availability %}opacity: 0.6;{% endif %}">
+                        <td>{{ product.productID }}</td>
                         <td>
                             <a href="{% url 'product_detail' product.productID %}">{{ product.productName }}</a>
                         </td>
                         <td>${{ product.price|floatformat:2 }}</td>
                         <td>{{ product.stockQuantity }}</td>
+                        <td>{{ product.wishlist_count }}</td>
                         <td>
                             <span style="padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem; font-weight: bold; background-color: {% if product.availability %}var(--success-color){% else %}var(--error-color){% endif %}; color: white;">
                                 {% if product.availability %}Active{% else %}Hidden{% endif %}
@@ -148,8 +212,8 @@
                         <td>{{ product.createdTime|date:"M d, Y" }}</td>
                         <td>
                             <div style="display: flex; gap: 0.5rem; align-items: stretch;">
-                                <a href="{% url 'edit_product' product.productID %}" class="btn btn-small btn-primary" style="display: flex; align-items: center;">Edit</a>
-                                <button onclick="openImageUpload({{ product.productID }})" class="btn btn-small btn-secondary" style="display: flex; align-items: center;">Images</button>
+                                <a href="{% url 'edit_product' product.productID %}" class="btn btn-small" style="display: flex; align-items: center; justify-content: center; background: #1a1a1a; color: #fff; border: none; font-weight: 600; text-decoration: none; padding: 0.3rem 0.7rem; font-size: 0.75rem; line-height: 1.2;">Edit</a>
+                                <button onclick="openImageUpload({{ product.productID }})" class="btn btn-small" style="display: flex; align-items: center; justify-content: center; background: #1a1a1a; color: #fff; border: none; font-weight: 600; padding: 0.3rem 0.7rem; font-size: 0.75rem; line-height: 1.2;">Images</button>
                                 <button onclick="toggleAvailability({{ product.productID }}, {{ product.availability|lower }})" class="btn btn-small" title="{% if product.availability %}Disable{% else %}Enable{% endif %}" style="background-color: {% if product.availability %}var(--warning-color){% else %}var(--success-color){% endif %}; color: white; display: flex; align-items: center; justify-content: center; width: 34px; padding: 0; flex-shrink: 0;">
                                     {% if product.availability %}
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>

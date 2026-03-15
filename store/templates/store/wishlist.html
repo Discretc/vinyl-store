@@ -24,14 +24,14 @@
                         <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">{{ product.storeID.storeName }}</p>
                         
                         <div style="min-height: 3.5rem; margin-bottom: 0.5rem;">
-                            {% if item.discountRate > 0 %}
-                                <p style="text-decoration: line-through; color: #999; font-size: 0.95rem; margin-bottom: 0.25rem;">${{ item.originalPrice|floatformat:2 }}</p>
+                            {% if item.has_active_promo %}
+                                <p style="text-decoration: line-through; color: #999; font-size: 0.95rem; margin-bottom: 0.25rem;">${{ product.price|floatformat:2 }}</p>
                                 <p class="product-price" style="margin-bottom: 0;">
-                                    ${{ item.priceAtAddedTime|floatformat:2 }}
-                                    <span class="product-discount">-{{ item.discountRate }}%</span>
+                                    ${{ item.live_discounted_price|floatformat:2 }}
+                                    <span class="product-discount">-{{ item.active_promo.discountRate|floatformat:0 }}%</span>
                                 </p>
                             {% else %}
-                                <p class="product-price" style="margin-bottom: 0;">${{ item.originalPrice|floatformat:2 }}</p>
+                                <p class="product-price" style="margin-bottom: 0;">${{ product.price|floatformat:2 }}</p>
                             {% endif %}
                         </div>
 
@@ -43,18 +43,18 @@
                             {% endif %}
                         </p>
                         <p style="font-size: 0.85rem; color: #999; margin-bottom: 1rem;">Added: {{ item.addedDate|date:"M d, Y" }}</p>
-                        <div class="product-actions">
-                            <a href="{% url 'product_detail' product.productID %}" class="btn btn-primary btn-small">View Details</a>
+                        <div class="product-actions" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <a href="{% url 'product_detail' product.productID %}" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 36px; background: #1a1a1a; color: #fff; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; text-decoration: none; border: none; border-radius: 3px; box-sizing: border-box; cursor: pointer;">View Details</a>
                             {% if product.stockQuantity > 0 %}
                                 <form method="post" action="{% url 'add_to_cart' product.productID %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="btn btn-success btn-small">Add to Cart</button>
+                                    <button type="submit" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 36px; background: #1a1a1a; color: #fff; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; border: none; border-radius: 3px; box-sizing: border-box; cursor: pointer;">Add to Cart</button>
                                 </form>
                             {% endif %}
-                            <form method="post" action="{% url 'toggle_wishlist' product.productID %}" style="flex: 1;">
+                            <form method="post" action="{% url 'toggle_wishlist' product.productID %}">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-secondary btn-small" style="background-color: #f0f0f0 !important; color: #0a0a0a !important; border-color: #d0d0d0 !important; width: 100%;">Remove</button>
+                                <button type="submit" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 36px; background: #e0e0e0; color: #333; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; border: none; border-radius: 3px; box-sizing: border-box; cursor: pointer;">Remove</button>
                             </form>
                         </div>
                     </div>
