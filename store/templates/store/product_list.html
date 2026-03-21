@@ -86,9 +86,9 @@
         {% endfor %}
     </div>
 
-    <!-- Pagination -->
+    <!-- Pagination (desktop) -->
     {% if page_obj.has_other_pages %}
-    <nav style="display: flex; justify-content: center; margin-top: 2.5rem; gap: 0.35rem; flex-wrap: wrap;">
+    <nav class="pagination-nav" style="display: flex; justify-content: center; margin-top: 2.5rem; gap: 0.35rem; flex-wrap: wrap;">
         {% if page_obj.has_previous %}
             <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary btn-small">&laquo; First</a>
             <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary btn-small">&lsaquo; Prev</a>
@@ -106,7 +106,16 @@
             <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary btn-small">Next &rsaquo;</a>
             <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary btn-small">Last &raquo;</a>
         {% endif %}
-    </nav>
+    </nav
+    {% endif %}
+
+    <!-- Infinite-scroll sentinel (mobile) -->
+    {% if page_obj.has_next %}
+    <div id="scrollSentinel" class="scroll-sentinel"
+         data-next-page="{{ page_obj.next_page_number }}"
+         data-total-pages="{{ page_obj.paginator.num_pages }}">
+        <div class="scroll-spinner"></div>
+    </div>
     {% endif %}
 {% else %}
     <div class="empty-state">
@@ -115,4 +124,57 @@
         <p>Try adjusting your filters or search terms</p>
     </div>
 {% endif %}
+
+<!-- Infinite-scroll script (mobile only) -->
+<script>
+(function () {
+    const MQ = window.matchMedia('(max-width: 768px)');
+    if (!MQ.matches) return; // desktop — do nothing
+
+    const grid = document.querySelector('.product-grid');
+    let sentinel = document.getElementById('scrollSentinel');
+    if (!grid || !sentinel) return;
+
+    let nextPage = parseInt(sentinel.dataset.nextPage, 10);
+    const totalPages = parseInt(sentinel.dataset.totalPages, 10);
+    let loading = false;
+
+    function buildURL(page) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', page);
+        return window.location.pathname + '?' + params.toString();
+    }
+
+    function loadMore() {
+        if (loading || nextPage > totalPages) return;
+        loading = true;
+        sentinel.style.display = 'flex';
+
+        fetch(buildURL(nextPage), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            while (tmp.firstElementChild) {
+                grid.appendChild(tmp.firstElementChild);
+            }
+            nextPage++;
+            loading = false;
+            if (nextPage > totalPages) {
+                sentinel.style.display = 'none';
+                observer.disconnect();
+            }
+        })
+        .catch(function () { loading = false; });
+    }
+
+    const observer = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) loadMore();
+    }, { rootMargin: '200px' });
+
+    observer.observe(sentinel);
+})();
+</script>
 {% endblock %}

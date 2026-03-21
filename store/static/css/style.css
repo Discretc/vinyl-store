@@ -410,7 +410,7 @@ textarea {
 .btn-secondary {
     background: #ffffff;
     color: #000000;
-    border: 2px solid #000000;
+    border: none;
 }
 
 .btn-secondary:hover {
@@ -1289,6 +1289,28 @@ textarea {
     margin: 0.5rem 0;
 }
 
+/* ======================= INFINITE SCROLL SENTINEL ======================= */
+
+.scroll-sentinel {
+    display: none; /* hidden on desktop; shown via media query */
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.scroll-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #e5e5e5;
+    border-top-color: #c0392b;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* ======================= RESPONSIVE DESIGN ======================= */
 
 /* ======================= HAMBURGER BUTTON ======================= */
@@ -1528,6 +1550,10 @@ textarea {
     /* Page title */
     .page-title { font-size: 1.6rem; padding-bottom: 0.75rem; }
     .page-title .container { padding: 1rem 1.25rem; }
+
+    /* Hide desktop pagination, show infinite-scroll sentinel */
+    .pagination-nav { display: none !important; }
+    .scroll-sentinel { display: flex; }
 
     /* Products grid */
     .product-grid {

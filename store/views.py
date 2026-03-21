@@ -302,6 +302,11 @@ def product_list(request):
         'stores': stores,
         'search_query': search_query,
     }
+
+    # AJAX partial — return only the product-card HTML fragment
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'store/_product_cards.html', context)
+
     return render(request, 'store/product_list.html', context)
 
 
