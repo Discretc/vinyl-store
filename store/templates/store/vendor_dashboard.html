@@ -120,7 +120,7 @@
 <div class="vendor-info-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; margin-bottom: 2rem; max-width: 100%;">
     <!-- Most Wishlisted -->
     <div class="container" style="margin: 0;">
-        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">❤️ Most Wishlisted</h3>
+        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Most Wishlisted</h3>
         {% if top_wishlisted %}
             <ol style="padding-left: 1.25rem; margin: 0;">
                 {% for p in top_wishlisted %}
@@ -137,7 +137,7 @@
 
     <!-- Most Viewed (30 days) -->
     <div class="container" style="margin: 0;">
-        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">👁️ Most Viewed (30 days)</h3>
+        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Most Viewed (30 days)</h3>
         {% if top_viewed %}
             <ol style="padding-left: 1.25rem; margin: 0;">
                 {% for p in top_viewed %}
@@ -184,6 +184,7 @@
         <table class="cart-table">
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Product Name</th>
                     <th>Price</th>
                     <th>Stock</th>
@@ -196,6 +197,7 @@
             <tbody>
                 {% for product in products %}
                     <tr style="{% if not product.availability %}opacity: 0.6;{% endif %}">
+                        <td>{{ product.productID }}</td>
                         <td>
                             <a href="{% url 'product_detail' product.productID %}">{{ product.productName }}</a>
                         </td>

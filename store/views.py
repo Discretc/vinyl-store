@@ -675,12 +675,11 @@ def checkout(request):
 
 def _get_order_aggregate_status(order):
     """Compute an aggregate display status for an order with multiple items.
-    Priority (worst-case shown): Processing > Holding > Shipping > Completed.
-    If ANY item is Cancelled and others are not, show the non-cancelled worst status.
+    If ALL items share the same status, show that status.
     If ALL items are Cancelled, show Cancelled.
+    If items have different non-cancelled statuses, show Mixed.
     """
-    priority = {'Processing': 0, 'Holding': 1, 'Shipping': 2, 'Completed': 3, 'Cancelled': 4}
-    worst = None
+    statuses = set()
     all_cancelled = True
     for item in order.items.all():
         latest = item.statuses.order_by('-updatedDate').first()
@@ -689,13 +688,14 @@ def _get_order_aggregate_status(order):
         s = latest.status
         if s != 'Cancelled':
             all_cancelled = False
-        if s == 'Cancelled':
-            continue  # skip cancelled when computing worst non-cancelled
-        if worst is None or priority.get(s, 99) < priority.get(worst, 99):
-            worst = s
+            statuses.add(s)
     if all_cancelled:
         return 'Cancelled'
-    return worst or 'Processing'
+    if len(statuses) == 1:
+        return statuses.pop()
+    if len(statuses) > 1:
+        return 'Mixed'
+    return 'Processing'
 
 
 def order_detail(request, order_id):
@@ -761,7 +761,7 @@ def order_history(request):
         
         # Get available status choices for the filter dropdown
         from store.models import OrderStatus
-        status_choices = OrderStatus.STATUS_CHOICES
+        status_choices = list(OrderStatus.STATUS_CHOICES) + [('Mixed', 'Mixed')]
 
         context = {
             'orders': orders,
