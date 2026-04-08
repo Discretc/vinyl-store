@@ -125,6 +125,9 @@
     </div>
 {% endif %}
 
+<!-- Scroll-to-top button (mobile) -->
+<button id="scrollTopBtn" class="scroll-top-btn" aria-label="Back to top" title="Back to top"></button>
+
 <!-- Infinite-scroll script (mobile only) -->
 <script>
 (function () {
@@ -175,6 +178,26 @@
     }, { rootMargin: '200px' });
 
     observer.observe(sentinel);
+})();
+</script>
+
+<!-- Scroll-to-top button logic -->
+<script>
+(function () {
+    if (!window.matchMedia('(max-width: 768px)').matches) return;
+    var btn = document.getElementById('scrollTopBtn');
+    if (!btn) return;
+    var shown = false;
+    window.addEventListener('scroll', function () {
+        if (window.scrollY > 600) {
+            if (!shown) { btn.classList.add('visible'); shown = true; }
+        } else {
+            if (shown) { btn.classList.remove('visible'); shown = false; }
+        }
+    }, { passive: true });
+    btn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 })();
 </script>
 {% endblock %}

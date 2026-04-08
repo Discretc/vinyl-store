@@ -1289,6 +1289,55 @@ textarea {
     margin: 0.5rem 0;
 }
 
+/* ===================== SCROLL-TO-TOP BUTTON (mobile) =================== */
+
+.scroll-top-btn {
+    display: none;
+    position: fixed;
+    bottom: 2rem;
+    right: 1.25rem;
+    z-index: 900;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background-color: #000;
+    color: #fff;
+    font-size: 0;
+    line-height: 0;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+    transform: translateY(10px);
+    align-items: center;
+    justify-content: center;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding: 0;
+}
+.scroll-top-btn::after {
+    content: '';
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-top: 3px solid #fff;
+    border-left: 3px solid #fff;
+    transform: rotate(45deg);
+    margin-top: 5px;
+}
+.scroll-top-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+    .scroll-top-btn { display: flex; }
+}
+
 /* ======================= INFINITE SCROLL SENTINEL ======================= */
 
 .scroll-sentinel {
